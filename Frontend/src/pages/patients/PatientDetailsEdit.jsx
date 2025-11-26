@@ -7,7 +7,7 @@ import {
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
   FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
-  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck, FiPrinter
 } from 'react-icons/fi';
 import { useUpdatePatientMutation, useAssignPatientMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
@@ -1058,6 +1058,634 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     }));
   };
 
+  // Print functionality refs
+  const patientDetailsPrintRef = useRef(null);
+  const adlPrintRef = useRef(null);
+  const prescriptionPrintRef = useRef(null);
+  
+  const handlePrintPatientDetails = () => {
+    if (!patientDetailsPrintRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print this section');
+      return;
+    }
+
+    const sectionElement = patientDetailsPrintRef.current;
+    const sectionHTML = sectionElement.innerHTML;
+
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Patient Details - ${patient?.name || 'Patient'}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 4px solid #2563eb;
+      padding-bottom: 12px;
+      margin-bottom: 25px;
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+      padding-top: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 16pt;
+      font-weight: bold;
+      color: #1e40af;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header h2 {
+      margin: 6px 0 0 0;
+      font-size: 12pt;
+      color: #475569;
+      font-weight: 600;
+    }
+    .content {
+      padding: 0;
+    }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #1e40af;
+      margin: 20px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .field-group {
+      margin-bottom: 15px;
+      padding: 8px;
+      background: #f8fafc;
+      border-left: 3px solid #3b82f6;
+      border-radius: 4px;
+    }
+    .field-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 9pt;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .field-value {
+      color: #1e293b;
+      font-size: 10pt;
+      font-weight: 500;
+      padding-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 9pt;
+      page-break-inside: auto;
+    }
+    table thead {
+      background: #1e40af;
+      color: #fff;
+    }
+    table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      border: 1px solid #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    table td {
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    table tbody tr {
+      page-break-inside: avoid;
+    }
+    table tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 2px solid #e2e8f0;
+      text-align: center;
+      font-size: 8pt;
+      color: #64748b;
+      page-break-inside: avoid;
+    }
+    button, .no-print, [class*="no-print"] {
+      display: none !important;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .grid-cols-1 { grid-template-columns: 1fr; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+      table {
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+    <h2>Department of Psychiatry - Patient Details</h2>
+  </div>
+  <div class="content">
+    ${sectionHTML}
+  </div>
+  <div class="footer">
+    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
+    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success('Print dialog opened');
+      }, 250);
+    };
+  };
+
+  // Print functionality for ADL section
+  const handlePrintADL = () => {
+    if (!adlPrintRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print this section');
+      return;
+    }
+
+    const sectionElement = adlPrintRef.current;
+    const sectionHTML = sectionElement.innerHTML;
+
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Out-Patient Intake Record - ${patient?.name || 'Patient'}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 4px solid #7c3aed;
+      padding-bottom: 12px;
+      margin-bottom: 25px;
+      background: linear-gradient(to bottom, #faf5ff, #ffffff);
+      padding-top: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 16pt;
+      font-weight: bold;
+      color: #6d28d9;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header h2 {
+      margin: 6px 0 0 0;
+      font-size: 12pt;
+      color: #475569;
+      font-weight: 600;
+    }
+    .content {
+      padding: 0;
+    }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #6d28d9;
+      margin: 20px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e9d5ff;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .field-group {
+      margin-bottom: 15px;
+      padding: 8px;
+      background: #faf5ff;
+      border-left: 3px solid #a78bfa;
+      border-radius: 4px;
+    }
+    .field-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 9pt;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .field-value {
+      color: #1e293b;
+      font-size: 10pt;
+      font-weight: 500;
+      padding-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 9pt;
+      page-break-inside: auto;
+    }
+    table thead {
+      background: #6d28d9;
+      color: #fff;
+    }
+    table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      border: 1px solid #5b21b6;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    table td {
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    table tbody tr {
+      page-break-inside: avoid;
+    }
+    table tbody tr:nth-child(even) {
+      background: #faf5ff;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 2px solid #e2e8f0;
+      text-align: center;
+      font-size: 8pt;
+      color: #64748b;
+      page-break-inside: avoid;
+    }
+    button, .no-print, [class*="no-print"] {
+      display: none !important;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .grid-cols-1 { grid-template-columns: 1fr; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+      table {
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+    <h2>Department of Psychiatry - Out-Patient Intake Record</h2>
+  </div>
+  <div class="content">
+    ${sectionHTML}
+  </div>
+  <div class="footer">
+    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
+    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success('Print dialog opened');
+      }, 250);
+    };
+  };
+
+  // Print functionality for Prescription section
+  const handlePrintPrescription = () => {
+    if (!prescriptionPrintRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print this section');
+      return;
+    }
+
+    const sectionElement = prescriptionPrintRef.current;
+    const sectionHTML = sectionElement.innerHTML;
+
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Prescription - ${patient?.name || 'Patient'}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 4px solid #d97706;
+      padding-bottom: 12px;
+      margin-bottom: 25px;
+      background: linear-gradient(to bottom, #fffbeb, #ffffff);
+      padding-top: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 16pt;
+      font-weight: bold;
+      color: #b45309;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header h2 {
+      margin: 6px 0 0 0;
+      font-size: 12pt;
+      color: #475569;
+      font-weight: 600;
+    }
+    .content {
+      padding: 0;
+    }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #b45309;
+      margin: 20px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #fed7aa;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .field-group {
+      margin-bottom: 15px;
+      padding: 8px;
+      background: #fffbeb;
+      border-left: 3px solid #fbbf24;
+      border-radius: 4px;
+    }
+    .field-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 9pt;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .field-value {
+      color: #1e293b;
+      font-size: 10pt;
+      font-weight: 500;
+      padding-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 9pt;
+      page-break-inside: auto;
+    }
+    table thead {
+      background: #b45309;
+      color: #fff;
+    }
+    table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      border: 1px solid #92400e;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    table td {
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    table tbody tr {
+      page-break-inside: avoid;
+    }
+    table tbody tr:nth-child(even) {
+      background: #fffbeb;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 2px solid #e2e8f0;
+      text-align: center;
+      font-size: 8pt;
+      color: #64748b;
+      page-break-inside: avoid;
+    }
+    button, .no-print, [class*="no-print"] {
+      display: none !important;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .grid-cols-1 { grid-template-columns: 1fr; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+      table {
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+    <h2>Department of Psychiatry - Prescription</h2>
+  </div>
+  <div class="content">
+    ${sectionHTML}
+  </div>
+  <div class="footer">
+    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
+    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success('Print dialog opened');
+      }, 250);
+    };
+  };
+
   // Determine which sections to show based on CURRENT USER's role (userRole)
   // If current user is System Administrator, JR, or SR → Show all sections
   const canViewAllSections = userRole && (
@@ -1985,10 +2613,12 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       {/* Patient Details Card - Collapsible */}
       <Card className="shadow-lg border-0 bg-white">
         <div
-          className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-          onClick={() => toggleCard('patient')}
+          className="flex items-center justify-between p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
         >
-          <div className="flex items-center gap-4">
+          <div 
+            className="flex items-center gap-4 cursor-pointer flex-1"
+            onClick={() => toggleCard('patient')}
+          >
             <div className="p-3 bg-blue-100 rounded-lg">
               <FiUser className="h-6 w-6 text-blue-600" />
             </div>
@@ -1997,15 +2627,35 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
               <p className="text-sm text-gray-500 mt-1">{patient?.name || 'New Patient'} - {patient?.cr_no || 'N/A'}</p>
             </div>
           </div>
-          {expandedCards.patient ? (
-            <FiChevronUp className="h-6 w-6 text-gray-500" />
-          ) : (
-            <FiChevronDown className="h-6 w-6 text-gray-500" />
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrintPatientDetails();
+              }}
+              className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              title="Print Patient Details"
+            >
+              <FiPrinter className="w-4 h-4 text-blue-600" />
+            </Button>
+            <div 
+              className="cursor-pointer"
+              onClick={() => toggleCard('patient')}
+            >
+              {expandedCards.patient ? (
+                <FiChevronUp className="h-6 w-6 text-gray-500" />
+              ) : (
+                <FiChevronDown className="h-6 w-6 text-gray-500" />
+              )}
+            </div>
+          </div>
         </div>
 
         {expandedCards.patient && (
-          <div className="p-6">
+          <div ref={patientDetailsPrintRef} className="p-6">
             <form onSubmit={handleSubmit}>
               {/* Quick Entry Section with Glassmorphism */}
               <div className="relative mb-8">
@@ -3046,10 +3696,12 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       {canViewADLFile && (
         <Card className="shadow-lg border-0 bg-white">
           <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('adl')}
+            className="flex items-center justify-between p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
           >
-            <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-4 cursor-pointer flex-1"
+              onClick={() => toggleCard('adl')}
+            >
               <div className="p-3 bg-purple-100 rounded-lg">
                 <FiFolder className="h-6 w-6 text-purple-600" />
               </div>
@@ -3064,15 +3716,35 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                 </p>
               </div>
             </div>
-            {expandedCards.adl ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500" />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrintADL();
+                }}
+                className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="Print Out-Patient Intake Record"
+              >
+                <FiPrinter className="w-4 h-4 text-purple-600" />
+              </Button>
+              <div 
+                className="cursor-pointer"
+                onClick={() => toggleCard('adl')}
+              >
+                {expandedCards.adl ? (
+                  <FiChevronUp className="h-6 w-6 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
+                )}
+              </div>
+            </div>
           </div>
 
           {expandedCards.adl && (
-            <div className="p-6">
+            <div ref={adlPrintRef} className="p-6">
               {patientAdlFiles.length > 0 ? (
                 <div className="space-y-6">
                   {patientAdlFiles.map((file, index) => {
@@ -3114,10 +3786,12 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       {canViewPrescriptions && (
         <Card className="shadow-lg border-0 bg-white">
           <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('prescriptions')}
+            className="flex items-center justify-between p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
           >
-            <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-4 cursor-pointer flex-1"
+              onClick={() => toggleCard('prescriptions')}
+            >
               <div className="p-3 bg-amber-100 rounded-lg">
                 <FiPackage className="h-6 w-6 text-amber-600" />
               </div>
@@ -3130,15 +3804,35 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                 </p>
               </div>
             </div>
-            {expandedCards.prescriptions ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500" />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrintPrescription();
+                }}
+                className="h-9 w-9 p-0 bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 border border-amber-200 hover:border-amber-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="Print Prescription"
+              >
+                <FiPrinter className="w-4 h-4 text-amber-600" />
+              </Button>
+              <div 
+                className="cursor-pointer"
+                onClick={() => toggleCard('prescriptions')}
+              >
+                {expandedCards.prescriptions ? (
+                  <FiChevronUp className="h-6 w-6 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
+                )}
+              </div>
+            </div>
           </div>
 
           {expandedCards.prescriptions && (
-            <div className="p-6">
+            <div ref={prescriptionPrintRef} className="p-6">
               {patientProformas.length > 0 ? (
                 <div className="space-y-6">
                   {patientProformas.map((proforma, index) => (

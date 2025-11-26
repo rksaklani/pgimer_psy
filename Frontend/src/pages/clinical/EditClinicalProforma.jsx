@@ -22,7 +22,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp, FiLoader, FiCalendar } from 'react-icons/fi';
+import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp, FiLoader, FiCalendar, FiPrinter } from 'react-icons/fi';
 import icd11Codes from '../../assets/ICD11_Codes.json';
 import { useUpdatePrescriptionMutation,useGetAllPrescriptionQuery, useCreatePrescriptionMutation } from '../../features/prescriptions/prescriptionApiSlice';
 import PrescriptionEdit from '../PrescribeMedication/PrescriptionEdit';
@@ -383,6 +383,289 @@ console.log("existingPrescriptionData", existingPrescriptionData);
 
   const toggleCard = (cardName) => {
     setExpandedCards(prev => ({ ...prev, [cardName]: !prev[cardName] }));
+  };
+
+  // Print functionality for Walk-in Clinical Proforma section
+  const printSectionRef = useRef(null);
+  
+  const handlePrintSection = (sectionName) => {
+    if (!printSectionRef.current) return;
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print this section');
+      return;
+    }
+
+    // Get the section content
+    const sectionElement = printSectionRef.current;
+    const sectionHTML = sectionElement.innerHTML;
+
+    // Create print-friendly HTML
+    // Determine color scheme based on section name
+    const getColorScheme = (section) => {
+      if (section.includes('Patient Details') || section.includes('Patient')) {
+        return {
+          border: '#2563eb',
+          bg: '#f8fafc',
+          text: '#1e40af',
+          headerBg: 'linear-gradient(to bottom, #f8fafc, #ffffff)',
+          tableHeader: '#1e40af',
+          tableEven: '#f8fafc'
+        };
+      } else if (section.includes('Clinical Proforma') || section.includes('Walk-in')) {
+        return {
+          border: '#059669',
+          bg: '#f0fdf4',
+          text: '#047857',
+          headerBg: 'linear-gradient(to bottom, #f0fdf4, #ffffff)',
+          tableHeader: '#047857',
+          tableEven: '#f0fdf4'
+        };
+      } else if (section.includes('ADL') || section.includes('Intake')) {
+        return {
+          border: '#7c3aed',
+          bg: '#faf5ff',
+          text: '#6d28d9',
+          headerBg: 'linear-gradient(to bottom, #faf5ff, #ffffff)',
+          tableHeader: '#6d28d9',
+          tableEven: '#faf5ff'
+        };
+      } else {
+        return {
+          border: '#d97706',
+          bg: '#fffbeb',
+          text: '#b45309',
+          headerBg: 'linear-gradient(to bottom, #fffbeb, #ffffff)',
+          tableHeader: '#b45309',
+          tableEven: '#fffbeb'
+        };
+      }
+    };
+    
+    const colors = getColorScheme(sectionName);
+    
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${sectionName} - ${patient?.name || 'Patient'}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 4px solid ${colors.border};
+      padding-bottom: 12px;
+      margin-bottom: 25px;
+      background: ${colors.headerBg};
+      padding-top: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 16pt;
+      font-weight: bold;
+      color: ${colors.text};
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header h2 {
+      margin: 6px 0 0 0;
+      font-size: 12pt;
+      color: #475569;
+      font-weight: 600;
+    }
+    .content {
+      padding: 0;
+    }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: ${colors.text};
+      margin: 20px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .field-group {
+      margin-bottom: 15px;
+      padding: 8px;
+      background: ${colors.bg};
+      border-left: 3px solid ${colors.border};
+      border-radius: 4px;
+    }
+    .field-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 9pt;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .field-value {
+      color: #1e293b;
+      font-size: 10pt;
+      font-weight: 500;
+      padding-left: 8px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    .info-item {
+      margin-bottom: 8px;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 9pt;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .info-value {
+      color: #1e293b;
+      font-size: 10pt;
+      font-weight: 500;
+      padding-left: 8px;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 9pt;
+      page-break-inside: auto;
+    }
+    table thead {
+      background: ${colors.tableHeader};
+      color: #fff;
+    }
+    table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      border: 1px solid ${colors.border};
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    table td {
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    table tbody tr {
+      page-break-inside: avoid;
+    }
+    table tbody tr:nth-child(even) {
+      background: ${colors.tableEven};
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 2px solid #e2e8f0;
+      text-align: center;
+      font-size: 8pt;
+      color: #64748b;
+      page-break-inside: avoid;
+    }
+    button, .no-print, [class*="no-print"] {
+      display: none !important;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .grid-cols-1 { grid-template-columns: 1fr; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+      table {
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+    <h2>Department of Psychiatry - ${sectionName}</h2>
+  </div>
+  <div class="content">
+    ${sectionHTML}
+  </div>
+  <div class="footer">
+    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
+    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success('Print dialog opened');
+      }, 250);
+    };
   };
 
   // Track previous initialFormData to avoid unnecessary updates
@@ -852,10 +1135,12 @@ console.log("existingPrescriptionData", existingPrescriptionData);
         <Card className={isEmbedded ? "shadow-lg border-0 bg-white" : "mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"}>
           {/* Collapsible Header */}
           <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('clinicalProforma')}
+            className="flex items-center justify-between p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
           >
-            <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-4 cursor-pointer flex-1"
+              onClick={() => toggleCard('clinicalProforma')}
+            >
               <div className="p-3 bg-green-100 rounded-lg">
                 <FiClipboard className="h-6 w-6 text-green-600" />
               </div>
@@ -868,15 +1153,35 @@ console.log("existingPrescriptionData", existingPrescriptionData);
                 )}
               </div>
             </div>
-            {expandedCards.clinicalProforma ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500 " />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrintSection('Walk-in Clinical Proforma');
+                }}
+                className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="Print Walk-in Clinical Proforma"
+              >
+                <FiPrinter className="w-4 h-4 text-blue-600" />
+              </Button>
+              <div 
+                className="cursor-pointer"
+                onClick={() => toggleCard('clinicalProforma')}
+              >
+                {expandedCards.clinicalProforma ? (
+                  <FiChevronUp className="h-6 w-6 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
+                )}
+              </div>
+            </div>
           </div>
 
           {expandedCards.clinicalProforma && (
-            <div className="p-6 space-y-6">
+            <div ref={printSectionRef} className="p-6 space-y-6">
               {/* {!isEmbedded && <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Walk-in Clinical Proforma</h1>} */}
 
               {/* Basic Information Section */}

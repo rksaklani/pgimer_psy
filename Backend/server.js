@@ -21,7 +21,7 @@ const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 2025;
+const PORT = process.env.PORT || 8000;
 
 // Security middleware - less restrictive for Swagger UI
 app.use(helmet({
@@ -37,6 +37,7 @@ app.use(helmet({
   },
   crossOriginOpenerPolicy: false,
   crossOriginResourcePolicy: false,
+  hsts: false, // Disable HSTS for HTTP connections
 }));
 
 // CORS configuration
@@ -51,8 +52,26 @@ app.use(helmet({
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://emrs.pgimer.ac.in']
-    : true, // Allow all origins in development
+    ? [
+        'https://emrs.pgimer.ac.in',
+        `http://122.186.76.102:3000`,
+        `http://122.186.76.102:8000`,
+        `http://122.186.76.102:8001`,
+        `http://122.186.76.102:8002`,
+        `http://122.186.76.102:2026`,
+      ]
+    : [
+        `http://122.186.76.102:3000`,
+        `http://122.186.76.102:8000`,
+        `http://122.186.76.102:8001`,
+        `http://122.186.76.102:8002`,
+        `http://122.186.76.102:2026`,
+        'http://localhost:3000',
+        'http://localhost:8000',
+        'http://localhost:8001',
+        'http://localhost:8002',
+        'http://localhost:2026',
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -266,7 +285,7 @@ process.on('SIGINT', () => {
 });
 
 // Start server with port fallback
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 🚀 EMRS PGIMER API Server is running!
 📍 Port: ${PORT}

@@ -772,8 +772,8 @@ class UserController {
       // Set refresh token in HttpOnly cookie
       res.cookie('refreshToken', refreshTokenRecord.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: false, // Set to false for HTTP (not HTTPS)
+        sameSite: 'lax', // Changed from 'strict' to allow cross-origin requests
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 

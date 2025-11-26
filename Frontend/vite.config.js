@@ -5,10 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // ✅ Allows access from external IP (not just localhost)
-    port: 2026,      // ✅ Runs on port 2026
+    port: 8001,      // ✅ Runs on port 8001
     proxy: {
       '/api': {
-        target: 'http://31.97.60.2:2025', // ✅ Backend server IP and port
+        target: 'http://122.186.76.102:8002', // ✅ Backend server IP and port
         changeOrigin: true,
       },
     },

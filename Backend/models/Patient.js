@@ -1147,20 +1147,25 @@ class Patient {
   static async getAgeDistribution() {
     try {
       const result = await db.query(`
+        WITH age_groups AS (
+          SELECT 
+            CASE 
+              WHEN age < 18 THEN 'Under 18'
+              WHEN age BETWEEN 18 AND 25 THEN '18-25'
+              WHEN age BETWEEN 26 AND 35 THEN '26-35'
+              WHEN age BETWEEN 36 AND 45 THEN '36-45'
+              WHEN age BETWEEN 46 AND 55 THEN '46-55'
+              WHEN age BETWEEN 56 AND 65 THEN '56-65'
+              WHEN age > 65 THEN '65+'
+              ELSE 'Unknown'
+            END as age_group
+          FROM registered_patient
+          WHERE age IS NOT NULL
+        )
         SELECT 
-          CASE 
-            WHEN age < 18 THEN 'Under 18'
-            WHEN age BETWEEN 18 AND 25 THEN '18-25'
-            WHEN age BETWEEN 26 AND 35 THEN '26-35'
-            WHEN age BETWEEN 36 AND 45 THEN '36-45'
-            WHEN age BETWEEN 46 AND 55 THEN '46-55'
-            WHEN age BETWEEN 56 AND 65 THEN '56-65'
-            WHEN age > 65 THEN '65+'
-            ELSE 'Unknown'
-          END as age_group,
+          age_group,
           COUNT(*) as count
-        FROM registered_patient
-        WHERE age IS NOT NULL
+        FROM age_groups
         GROUP BY age_group
         ORDER BY 
           CASE age_group

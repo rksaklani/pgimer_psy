@@ -41,8 +41,8 @@ class SessionController {
         // Clear refresh token cookie
         res.clearCookie('refreshToken', {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          secure: false,
+          sameSite: 'lax'
         });
 
         return res.status(401).json({
@@ -106,8 +106,8 @@ class SessionController {
       // Clear refresh token cookie
       res.clearCookie('refreshToken', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: false,
+        sameSite: 'lax'
       });
 
       res.json({
