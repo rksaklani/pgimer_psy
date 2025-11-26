@@ -1078,13 +1078,13 @@ const PatientsPage = () => {
         ` : ''}
         ${proforma.requires_adl_file !== undefined ? `
         <div class="info-item">
-          <div class="info-label">Requires ADL File</div>
+          <div class="info-label">Requires Out Patient Intake Record</div>
           <div class="info-value">${formatValue(proforma.requires_adl_file)}</div>
         </div>
         ` : ''}
         ${proforma.adl_reasoning ? `
         <div class="info-item full-width">
-          <div class="info-label">ADL Reasoning</div>
+          <div class="info-label">Out Patient Intake Record Reasoning</div>
           <div class="info-value">${formatValue(proforma.adl_reasoning)}</div>
         </div>
         ` : ''}
@@ -1102,11 +1102,11 @@ const PatientsPage = () => {
 
   ${adlFiles && adlFiles.length > 0 ? `
   <div class="section">
-    <div class="section-title">ADL Files (${adlFiles.length})</div>
+    <div class="section-title">Out Patient Intake Record (${adlFiles.length})</div>
     ${adlFiles.map((adl, index) => `
     <div style="margin-bottom: 25px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
       <h3 style="margin: 0 0 15px 0; font-size: 12px; font-weight: bold; color: #1f2937; border-bottom: 1px solid #d1d5db; padding-bottom: 8px;">
-        ADL File ${index + 1} - ${formatValue(adl.adl_no || `ID: ${adl.id}`)}
+        Out Patient Intake Record ${index + 1} - ${formatValue(adl.adl_no || `ID: ${adl.id}`)}
       </h3>
       <div class="info-grid">
         ${adl.file_status ? `
@@ -1309,7 +1309,7 @@ const PatientsPage = () => {
         <div class="info-value">${patient.has_adl_file || patient.case_complexity === 'complex' ? 'Complex' : 'Simple'}</div>
       </div>
       <div class="info-item">
-        <div class="info-label">ADL File</div>
+        <div class="info-label">Out Patient Intake Record</div>
         <div class="info-value">${patient.has_adl_file || (adlFiles && adlFiles.length > 0) ? 'Yes' : 'No'}</div>
       </div>
       ${patient.date ? `
@@ -1450,7 +1450,7 @@ const PatientsPage = () => {
                 : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200'
             }`}
           >
-              {statusText}
+              {statusText} 
           </Badge>
           <div className="flex items-center gap-1">
             <div className={`w-2 h-2 rounded-full ${

@@ -2220,11 +2220,11 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                 <FiFolder className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Additional Details (ADL File)</h3>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Out Patient Intake Record</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   {patientAdlFiles.length > 0
                     ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
-                    : 'No ADL files'}
+                    : 'No Out Patient Intake Record files'}
                 </p>
               </div>
             </div>
@@ -2259,7 +2259,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               ) : (
                 <div className="text-center py-12 text-gray-500">
                   <FiFolder className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-base">No ADL files found</p>
+                  <p className="text-base">No  Out Patient Intake Record found</p>
                 </div>
               )}
             </div>

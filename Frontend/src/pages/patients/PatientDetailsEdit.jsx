@@ -3711,8 +3711,8 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                   {patientAdlFiles.length > 0
                     ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
                     : selectedProforma?.adl_file_id
-                      ? 'ADL file linked to proforma'
-                      : 'No ADL files'}
+                      ? 'Out Patient Intake Record  linked to proforma'
+                      : 'No Out Patient Intake Record files'}
                 </p>
               </div>
             </div>

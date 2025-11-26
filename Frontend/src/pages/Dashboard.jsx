@@ -542,7 +542,7 @@ const Dashboard = () => {
               subtitle="Walk-in assessments"
             />
             <StatCard
-              title="ADL Files"
+              title="Out Patient Intake Record  Files"
               value={adlStats?.data?.stats?.total_files || 0}
               icon={FiFolder}
               colorClasses="from-purple-500 to-purple-600"
@@ -652,7 +652,7 @@ const Dashboard = () => {
               title={
                 <div className="flex items-center gap-2">
                   <FiFolder className="w-5 h-5 text-primary-600" />
-                  <span>ADL File Status Distribution</span>
+                  <span>Out Patient Intake Record Status Distribution</span>
                 </div>
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
@@ -666,7 +666,7 @@ const Dashboard = () => {
                       ...chartOptions.plugins,
                       title: {
                         ...chartOptions.plugins.title,
-                        text: 'ADL File Status Distribution'
+                        text: 'Out Patient Intake Record Status Distribution'
                       }
                     }
                   }} 
@@ -744,8 +744,8 @@ const Dashboard = () => {
                       <ActivityItem
                         key={file.id || idx}
                         icon={FiFolder}
-                        title={`ADL File ${file.file_status || 'Created'}`}
-                        description={`Patient: ${file.patient_name || 'N/A'} - ADL No: ${file.adl_no || 'N/A'}`}
+                        title={`Out Patient Intake Record ${file.file_status || 'Created'}`}
+                        description={`Patient: ${file.patient_name || 'N/A'} - Out Patient Intake Record  No: ${file.adl_no || 'N/A'}`}
                         time={file.created_at ? formatDateTime(file.created_at) : 'N/A'}
                         status={file.file_status}
                         color="from-purple-500 to-purple-600"
@@ -792,13 +792,13 @@ const Dashboard = () => {
                   to="/clinical-proforma/create"
                   colorClasses="hover:from-green-50 hover:to-emerald-50"
                 />
-                <QuickActionCard
+                {/* <QuickActionCard
                   icon={FiFolder}
                   title="Create ADL"
                   description="New intake record"
                   to="/adl-files/new"
                   colorClasses="hover:from-purple-50 hover:to-pink-50"
-                />
+                /> */}
                 <QuickActionCard
                   icon={FiUsers}
                   title="Manage Users"
@@ -842,7 +842,7 @@ const Dashboard = () => {
                   <Badge variant="warning">{patientStats?.data?.stats?.complex_cases || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-green-50/50 rounded-lg">
-                  <span className="text-gray-700 font-medium">Patients with ADL</span>
+                  <span className="text-gray-700 font-medium">Out Patient Intake Record of Patients</span>
                   <Badge variant="success">{patientStats?.data?.stats?.patients_with_adl || 0}</Badge>
                 </div>
               </div>
@@ -867,7 +867,7 @@ const Dashboard = () => {
                   <Badge variant="error">{clinicalStats?.data?.stats?.severe_cases || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-yellow-50/50 rounded-lg">
-                  <span className="text-gray-700 font-medium">Cases Requiring ADL</span>
+                  <span className="text-gray-700 font-medium">Cases Requiring Out Patient Intake Record</span>
                   <Badge variant="warning">{clinicalStats?.data?.stats?.cases_requiring_adl || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-blue-50/50 rounded-lg">
@@ -914,7 +914,7 @@ const Dashboard = () => {
               subtitle="Requiring attention"
             />
             <StatCard 
-              title="Active ADL Files" 
+              title="Active Out Patient Intake Record" 
               value={activeADLFiles?.data?.files?.length || 0} 
               icon={FiFolder} 
               colorClasses="from-purple-500 to-purple-600"
@@ -1036,7 +1036,7 @@ const Dashboard = () => {
 
             <div className="space-y-4">
               {/* Notifications Panel */}
-              <Card 
+              {/* <Card 
                 title={
                   <div className="flex items-center gap-2">
                     <FiBell className="w-5 h-5 text-primary-600" />
@@ -1080,7 +1080,7 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
-              </Card>
+              </Card> */}
 
               {/* Quick Actions */}
               <Card 
@@ -1154,11 +1154,11 @@ const Dashboard = () => {
               subtitle="Total assessments"
             />
             <StatCard 
-              title="ADL Files Created" 
+              title="Total Out Patient Intake Record  Created" 
               value={activeADLFiles?.data?.files?.length || 0} 
               icon={FiFolder} 
               colorClasses="from-purple-500 to-purple-600"
-              to="/adl-files"
+              // to="/adl-files"
               subtitle="Intake records"
             />
             <StatCard 
@@ -1221,7 +1221,7 @@ const Dashboard = () => {
               title={
                 <div className="flex items-center gap-2">
                   <FiBarChart2 className="w-5 h-5 text-primary-600" />
-                  <span>ADL Status Breakdown</span>
+                  <span>Out Patient Intake Record Status Breakdown</span>
                 </div>
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
@@ -1231,7 +1231,7 @@ const Dashboard = () => {
                   data={{
                     labels: ['Active', 'Stored', 'Retrieved', 'Archived'],
                     datasets: [{
-                      label: 'ADL Files',
+                      label: 'Out Patient Intake Record Files',
                       data: [
                         adlStatusMap.active || 0,
                         adlStatusMap.stored || 0,
@@ -1249,7 +1249,7 @@ const Dashboard = () => {
                       ...barChartOptions.plugins,
                       title: {
                         ...barChartOptions.plugins.title,
-                        text: 'ADL Status Breakdown'
+                        text: 'Out Patient Intake Record Status Breakdown'
                       }
                     }
                   }}
@@ -1292,7 +1292,7 @@ const Dashboard = () => {
                       <ActivityItem
                         key={file.id || idx}
                         icon={FiFolder}
-                        title={`ADL File: ${file.file_status || 'Active'}`}
+                        title={`Out Patient Intake Record: ${file.file_status || 'Active'}`}
                         description={`Patient: ${file.patient_name || 'N/A'}`}
                         time={file.created_at ? formatDateTime(file.created_at) : 'N/A'}
                         status={file.file_status}
@@ -1306,7 +1306,7 @@ const Dashboard = () => {
 
             <div className="space-y-4">
               {/* Notifications Panel */}
-              <Card 
+              {/* <Card 
                 title={
                   <div className="flex items-center gap-2">
                     <FiBell className="w-5 h-5 text-primary-600" />
@@ -1350,10 +1350,10 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
-              </Card>
+              </Card> */}
 
               {/* Quick Actions */}
-              <Card 
+              {/* <Card 
                 title={
                   <div className="flex items-center gap-2">
                     <FiSettings className="w-5 h-5 text-primary-600" />
@@ -1365,7 +1365,7 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   <QuickActionCard
                     icon={FiFolder}
-                    title="Create ADL"
+                    title="Add Out Patient Intake Record"
                     description="New intake record"
                     to="/adl-files/new"
                     colorClasses="hover:from-purple-50 hover:to-pink-50"
@@ -1392,7 +1392,7 @@ const Dashboard = () => {
                     colorClasses="hover:from-orange-50 hover:to-amber-50"
                   />
                 </div>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>

@@ -619,7 +619,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
           ...prepareDataForSubmission(formData)
         };
         await createADLFile(createData).unwrap();
-        toast.success('ADL File created successfully!');
+        toast.success('Out Patient Intake Record File created successfully!');
         
         // Handle file uploads for new ADL file
         if (patientId && selectedFiles && selectedFiles.length > 0) {
@@ -635,7 +635,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
             refetchFiles();
           } catch (fileErr) {
             console.error('File upload error:', fileErr);
-            toast.error(fileErr?.data?.message || 'Failed to upload files. ADL file was created successfully.');
+            toast.error(fileErr?.data?.message || 'Failed to upload files. Out Patient Intake Record file was created successfully.');
           }
         }
         
@@ -656,7 +656,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
           ...prepareDataForSubmission(formData)
         };
         await updateADLFile(updateData).unwrap();
-        toast.success('ADL File updated successfully!');
+        toast.success('Out Patient Intake Record  updated successfully!');
         
         // Handle file uploads/updates for existing ADL file
         if (patientId && ((selectedFiles && selectedFiles.length > 0) || (filesToRemove && filesToRemove.length > 0))) {
@@ -698,7 +698,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
             }
           } catch (fileErr) {
             console.error('File upload error:', fileErr);
-            toast.error(fileErr?.data?.message || 'Failed to update files. ADL file was saved successfully.');
+            toast.error(fileErr?.data?.message || 'Failed to update files. Out Patient Intake Record file was saved successfully.');
           }
         }
         
@@ -715,7 +715,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
         toast.error('Cannot save: Missing required information');
       }
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to save ADL file');
+      toast.error(err?.data?.message || 'Failed to save Out Patient Intake Record file');
     }
   };
 
@@ -3362,7 +3362,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
                 {!patientId && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      Patient ID is required to upload files. Please save the ADL file first to enable file uploads.
+                      Patient ID is required to upload files. Please save the Out Patient Intake Record  first to enable file uploads.
                     </p>
                   </div>
                 )}
@@ -3398,7 +3398,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
         <Card className="p-8 max-w-md text-center">
           <FiFileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2"> Out Patient Intake Record Not Found</h2>
-          <p className="text-gray-600 mb-6">The ADL file you're trying to edit doesn't exist.</p>
+          <p className="text-gray-600 mb-6">The Out Patient Intake Record file you're trying to edit doesn't exist.</p>
           <Button onClick={() => navigate('/adl-files')} variant="primary">
             Back to Out Patient Intake Records
           </Button>
@@ -5548,7 +5548,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
                 {!patientId && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      Patient ID is required to upload files. Please save the ADL file first to enable file uploads.
+                      Patient ID is required to upload files. Please save the Out Patient Intake Record first to enable file uploads.
                     </p>
                   </div>
                 )}

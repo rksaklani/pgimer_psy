@@ -930,14 +930,14 @@ const ClinicalProformaDetails = ({ proforma }) => {
 
       {/* ADL File Requirements */}
       {proforma.requires_adl_file && (
-        <Card title="ADL File Requirements">
+        <Card title="Out Patient Intake Record Requirements">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant="warning">Requires ADL File</Badge>
+              <Badge variant="warning">Requires Out Patient Intake Record File</Badge>
               {isComplexCase && adlFile && (
                 <Link to={`/adl-files/${adlFile.id}`}>
                   <Button variant="outline" size="sm">
-                    <FiFileText className="mr-2" /> View ADL File Details
+                    <FiFileText className="mr-2" /> View Out Patient Intake Record  Details
                   </Button>
                 </Link>
               )}
@@ -974,11 +974,11 @@ const ClinicalProformaDetails = ({ proforma }) => {
             <div className="mb-4 flex items-center gap-2">
               <FiActivity className="w-5 h-5 text-red-600" />
               <Badge variant="danger" className="text-sm font-semibold">
-                Complex Case - Data from ADL File
+                Complex Case - Data from Out Patient Intake Record
               </Badge>
               <Link to={`/adl-files/${adlFile.id}`}>
                 <Button variant="outline" size="sm">
-                  <FiFileText className="mr-2" /> View Full ADL File
+                  <FiFileText className="mr-2" /> View Full Out Patient Intake Record
                 </Button>
               </Link>
             </div>
