@@ -9,7 +9,7 @@ import {
   FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
   FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck, FiPrinter
 } from 'react-icons/fi';
-import { useUpdatePatientMutation, useAssignPatientMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
+import { useUpdatePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import { useGetPatientFilesQuery, useUpdatePatientFilesMutation, useDeletePatientFileMutation } from '../../features/patients/patientFilesApiSlice';
 import { useSelector } from 'react-redux';
@@ -2100,14 +2100,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 
   // State declarations
   const [errors, setErrors] = useState({});
-  const [crValidationTimeout, setCrValidationTimeout] = useState(null);
-  const [currentCRNumber, setCurrentCRNumber] = useState('');
-
-  // CR number validation
-  const { data: crExists, isLoading: isCheckingCR } = useCheckCRNumberExistsQuery(
-    currentCRNumber,
-    { skip: !currentCRNumber || currentCRNumber.length < 3 || currentCRNumber === patient?.cr_no }
-  );
 
 
 
@@ -2189,35 +2181,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     }
   }, [formData.referred_by, formData.referred_by_other]);
 
-  // CR validation effect
-  useEffect(() => {
-    const currentCR = formData.cr_no;
-
-    if (currentCR && currentCR.length >= 3) {
-      // Skip validation if CR number matches the patient's existing CR number
-      if (currentCR === patient?.cr_no) {
-        setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-        return;
-      }
-
-      if (currentCR !== currentCRNumber) {
-        setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-        setCurrentCRNumber(currentCR);
-        return;
-      } else if (currentCR === currentCRNumber && !isCheckingCR) {
-        if (crExists === true) {
-          setErrors((prev) => ({ ...prev, patientCRNo: 'CR No. already exists.' }));
-        } else if (crExists === false) {
-          setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-        } else {
-          setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-        }
-      }
-    } else {
-      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-      setCurrentCRNumber('');
-    }
-  }, [formData.cr_no, crExists, isCheckingCR, currentCRNumber, patient?.cr_no]);
 
 
 
@@ -2285,16 +2248,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       return;
     }
 
-    // Handle CR number validation
-    if (name === 'cr_no') {
-      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-      if (crValidationTimeout) clearTimeout(crValidationTimeout);
-      setCurrentCRNumber('');
-      if (value.length >= 3) {
-        setCrValidationTimeout(setTimeout(() => setCurrentCRNumber(value), 500));
-      }
-      return;
-    }
 
     // Clear field errors
     if (errors[name]) {
@@ -2331,33 +2284,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       }
     }
 
-    // Clear any existing CR number error when user starts typing
-    if (name === 'cr_no') {
-      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
-
-      if (crValidationTimeout) {
-        clearTimeout(crValidationTimeout);
-      }
-
-      setCurrentCRNumber('');
-
-      if (value.length >= 3) {
-        const timeout = setTimeout(() => {
-          setCurrentCRNumber(value);
-        }, 500);
-        setCrValidationTimeout(timeout);
-      }
-    }
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (crValidationTimeout) {
-        clearTimeout(crValidationTimeout);
-      }
-    };
-  }, [crValidationTimeout]);
 
   const validate = () => {
     const newErrors = {};
@@ -2401,11 +2328,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     const patientAge = formData.age || '';
     const patientCRNo = formData.cr_no || '';
 
-    // Don't submit while checking CR number
-    if (patientCRNo && patientCRNo !== patient?.cr_no && isCheckingCR) {
-      toast.error('Please wait while we check the CR number...');
-      return;
-    }
 
     try {
       // Validate required fields
@@ -2680,7 +2602,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                         value={formData.cr_no || ''}
                         onChange={handleChange}
                         placeholder="Enter CR number"
-                        loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
                         disabled={true}
                         className="disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-900"
                       />
@@ -2957,14 +2878,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                           value={formData.cr_no || ''}
                           onChange={handleChange}
                           placeholder="Enter CR number"
-                          // error={errors.patientCRNo}
-                          loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
-                          // className={`${errors.patientCRNo
-                          //   ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
-                          //   : formData.cr_no && formData.cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
-                          //     ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
-                          //     : ''
-                          //   }`}
                           disabled={true}
                           className="disabled:bg-gray-200 disabled:cursor-not-allowed"
                         />
@@ -3878,7 +3791,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
         </Card>
       )}
 
-<div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
+{expandedCards.clinicalProforma && <div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
 
 <Button
   type="button"
@@ -3918,7 +3831,7 @@ Print All
   View All Patient
 </Button>
 </div>
-
+}
     </div>
   );
 };
