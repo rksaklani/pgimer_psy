@@ -212,7 +212,7 @@ const Select = ({
           `}
         >
           <span className="block truncate pr-2">
-            {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? selectedOption.label : placeholder}
           </span>
         </button>
 

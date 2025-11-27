@@ -1,134 +1,62 @@
-import { useEffect, useRef, useCallback } from 'react';
-
-/**
- * Custom hook for tracking user inactivity
- * Detects all user activity: keyboard, mouse, clicks, scrolling, form inputs, etc.
- * 
- * @param {Object} options - Configuration options
- * @param {number} options.timeout - Inactivity timeout in milliseconds (default: 15 minutes)
- * @param {Function} options.onIdle - Callback when user becomes idle
- * @param {Function} options.onActive - Callback when user becomes active
- * @param {boolean} options.enabled - Whether the timer is enabled (default: true)
- * @returns {Object} - { isIdle, resetTimer }
- */
-export function useIdleTimer({
-  timeout = 15 * 60 * 1000, // 15 minutes default
-  onIdle,
-  onActive,
-  enabled = true
-} = {}) {
-  const timeoutIdRef = useRef(null);
-  const isIdleRef = useRef(false);
-  const lastActivityRef = useRef(Date.now());
+import { useEffect, useRef } from "react";
+export default function useIdleTimer({ timeout, onIdle, onActive, enabled = true }) {
+  const timer = useRef(null);
+  const lastActivity = useRef(Date.now());
   const lastActiveCallRef = useRef(0);
-  const ACTIVE_CALL_THROTTLE = 3000; // Call onActive at most once every 3 seconds
+  // Throttle onActive calls to prevent excessive API calls - only call once every 2 minutes
+  const ACTIVE_CALL_THROTTLE = 2 * 60 * 1000; // 2 minutes
 
-  // Reset the idle timer
-  const resetTimer = useCallback(() => {
+  const resetTimer = () => {
     if (!enabled) return;
 
-    const wasIdle = isIdleRef.current;
-    lastActivityRef.current = Date.now();
-    isIdleRef.current = false;
-
-    // Clear existing timeout
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current);
-    }
-
-    // Call onActive when user transitions from idle to active OR if enough time has passed
-    // This ensures activity is updated regularly when user is active (throttled to every 3 seconds)
     const now = Date.now();
-    if (onActive && (wasIdle || (now - lastActiveCallRef.current) >= ACTIVE_CALL_THROTTLE)) {
-      lastActiveCallRef.current = now;
-      onActive();
+    const inactiveTime = now - lastActivity.current;
+
+    if (inactiveTime > timeout) {
+      onIdle && onIdle();
+    } else {
+      // Only call onActive if enough time has passed since last call (throttling)
+      // This prevents excessive API calls on every mouse movement/click
+      if (onActive && (now - lastActiveCallRef.current) >= ACTIVE_CALL_THROTTLE) {
+        lastActiveCallRef.current = now;
+        onActive();
+      }
     }
 
-    // Set new timeout
-    timeoutIdRef.current = setTimeout(() => {
-      isIdleRef.current = true;
-      if (onIdle) {
-        onIdle();
+    lastActivity.current = now;
+
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (enabled) {
+        onIdle && onIdle();
       }
     }, timeout);
-  }, [timeout, onIdle, onActive, enabled]);
-
-  // Handle user activity
-  const handleActivity = useCallback(() => {
-    resetTimer();
-  }, [resetTimer]);
+  };
 
   useEffect(() => {
     if (!enabled) {
-      // Clear timeout if disabled
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
       }
       return;
     }
 
-    // List of events to track
-    const events = [
-      'mousedown',
-      'mousemove',
-      'keypress',
-      'keydown',
-      'scroll',
-      'touchstart',
-      'click',
-      'focus',
-      'blur',
-      'input',
-      'change',
-      'select',
-      'submit'
-    ];
+    const events = ["click", "mousemove", "keypress", "scroll", "touchstart"];
 
-    // Add event listeners with passive option for better performance
-    const options = { passive: true, capture: true };
+    events.forEach((event) =>
+      window.addEventListener(event, resetTimer)
+    );
 
-    events.forEach(event => {
-      document.addEventListener(event, handleActivity, options);
-    });
-
-    // Track API calls via fetch and XMLHttpRequest
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      handleActivity();
-      return originalFetch.apply(this, args);
-    };
-
-    // Track XMLHttpRequest
-    const originalXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(...args) {
-      this.addEventListener('loadstart', handleActivity, { once: true });
-      return originalXHROpen.apply(this, args);
-    };
-
-    // Initialize timer
     resetTimer();
 
-    // Cleanup
     return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleActivity, options);
-      });
-
-      // Restore original functions
-      window.fetch = originalFetch;
-      XMLHttpRequest.prototype.open = originalXHROpen;
-
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-      }
+      events.forEach((event) =>
+        window.removeEventListener(event, resetTimer)
+      );
+      if (timer.current) clearTimeout(timer.current);
     };
-  }, [handleActivity, resetTimer, enabled]);
+  }, [enabled, timeout]);
 
-  return {
-    isIdle: isIdleRef.current,
-    resetTimer,
-    lastActivity: lastActivityRef.current
-  };
+  return null;
 }
-

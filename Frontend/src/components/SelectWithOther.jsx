@@ -1,7 +1,3 @@
-// 
-
-
-
 import { useState, useEffect, useRef } from 'react';
 import { FiCheck, FiChevronDown } from 'react-icons/fi';
 import { createPortal } from 'react-dom';
@@ -304,11 +300,11 @@ export const SelectWithOther = ({
             `}
           >
             <span className="block truncate pr-2">
-              {isOthersSelected && customInputValue
-                ? customInputValue
-                : selectedOption
-                  ? selectedOption.label
-                  : selectProps.placeholder}
+            {isOthersSelected && customInputValue
+              ? customInputValue
+              : selectedOption
+                ? selectedOption.label
+                : selectProps.placeholder}
             </span>
           </button>
   
