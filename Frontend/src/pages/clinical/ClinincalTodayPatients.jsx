@@ -44,12 +44,26 @@ const PatientRow = ({ patient, isNewPatient, navigate, onMarkCompleted }) => {
     }
   };
   
+  // Check if patient has a proforma created today
+  const toISTDateString = (dateInput) => {
+    try {
+      if (!dateInput) return '';
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    } catch (_) {
+      return '';
+    }
+  };
+  
   // Check if visit is already completed
   const isCompleted = patient.visit_status === 'completed';
   
-  // Only show "Mark as Completed" button if patient has a visit record for today
-  // New patients created today may not have a visit record yet
-  const hasVisitRecord = patient.visit_status !== undefined && patient.visit_status !== null;
+  // Show "Mark as Completed" button for ALL patients in today's list
+  // Since patients are already filtered to show only today's patients (created today OR has visit today),
+  // we should show the button for all of them, except those already completed
+  // This ensures the button appears for both new patients and existing patients with visits
+  const shouldShowCompleteButton = !isCompleted;
   
   // Refetch proformas when component becomes visible (e.g., after returning from deletion)
   useEffect(() => {
@@ -67,19 +81,7 @@ const PatientRow = ({ patient, isNewPatient, navigate, onMarkCompleted }) => {
   const hasExistingProforma = proformas.length > 0;
   const latestProformaId = hasExistingProforma ? proformas[0].id : null;
   
-  // Check if patient has a proforma created today
-  const toISTDateString = (dateInput) => {
-    try {
-      if (!dateInput) return '';
-      const d = new Date(dateInput);
-      if (isNaN(d.getTime())) return '';
-      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-    } catch (_) {
-      return '';
-    }
-  };
-  
-  const todayDateString = toISTDateString(new Date());
+  // Check if patient has a proforma created today (reuse todayDateString from above)
   const hasProformaToday = proformas.some(proforma => {
     const proformaDate = toISTDateString(proforma.created_at || proforma.visit_date || proforma.date);
     return proformaDate === todayDateString;
@@ -230,8 +232,8 @@ const PatientRow = ({ patient, isNewPatient, navigate, onMarkCompleted }) => {
               <FiPlusCircle className="w-3.5 h-3.5" />
             </Button> */}
             
-            {/* Mark as Completed Button - Only show if patient has a visit record and is not already completed */}
-            {hasVisitRecord && !isCompleted && (
+            {/* Mark as Completed Button - Show for all patients in today's list (not already completed) */}
+            {shouldShowCompleteButton && (
               <Button
                 variant="outline"
                 size="sm"

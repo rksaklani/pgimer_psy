@@ -1437,42 +1437,29 @@ class PatientController {
         });
       }
 
-      // Mark today's visit as completed
-      const visit = await PatientVisit.markPatientVisitCompletedToday(patientIdInt, visit_date);
+      // Get patient to retrieve assigned_doctor_id and room_no if needed
+      const patient = await Patient.findById(patientIdInt);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: 'Patient not found'
+        });
+      }
+      
+      // Mark today's visit as completed (will create visit record if it doesn't exist)
+      const visit = await PatientVisit.markPatientVisitCompletedToday(
+        patientIdInt, 
+        visit_date,
+        patient.assigned_doctor_id || null,
+        patient.assigned_room || null
+      );
 
       if (!visit) {
-        // Check if patient exists to provide a more helpful error message
-        const patient = await Patient.findById(patientIdInt);
-        if (!patient) {
-          return res.status(404).json({
-            success: false,
-            message: 'Patient not found'
-          });
-        }
-        
-        // Check if there's any visit record for today
-        const db = require('../config/database');
-        const today = visit_date || new Date().toISOString().slice(0, 10);
-        const visitCheck = await db.query(
-          `SELECT visit_status FROM patient_visits 
-           WHERE patient_id = $1 AND visit_date = $2 
-           ORDER BY created_at DESC LIMIT 1`,
-          [patientIdInt, today]
-        );
-        
-        if (visitCheck.rows && visitCheck.rows.length > 0) {
-          // Visit exists but is already completed
-          return res.status(404).json({
-            success: false,
-            message: 'Visit for today is already marked as completed'
-          });
-        } else {
-          // No visit record exists for today
-          return res.status(404).json({
-            success: false,
-            message: 'No visit record found for today. Please create a visit record first before marking as completed.'
-          });
-        }
+        // Visit exists but is already completed
+        return res.status(404).json({
+          success: false,
+          message: 'Visit for today is already marked as completed'
+        });
       }
 
       res.json({

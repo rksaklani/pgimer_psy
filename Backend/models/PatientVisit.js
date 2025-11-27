@@ -103,7 +103,8 @@ class PatientVisit {
   }
 
   // Mark today's visit for a patient as completed
-  static async markPatientVisitCompletedToday(patient_id, visit_date = null) {
+  // If no visit record exists, create one first
+  static async markPatientVisitCompletedToday(patient_id, visit_date = null, assigned_doctor_id = null, room_no = null) {
     try {
       const dateToUse = visit_date || new Date().toISOString().slice(0, 10);
       
@@ -117,30 +118,49 @@ class PatientVisit {
         [patient_id, dateToUse]
       );
 
+      let visitId;
+      
       if (!checkResult.rows || checkResult.rows.length === 0) {
-        return null; // No visit found
+        // No visit found - create one automatically
+        // Get visit count to determine visit type
+        const visitCount = await PatientVisit.getVisitCount(patient_id);
+        const visitType = visitCount === 0 ? 'first_visit' : 'follow_up';
+        
+        // Create visit record with 'scheduled' status first
+        const createResult = await db.query(
+          `INSERT INTO patient_visits (patient_id, visit_date, visit_type, has_file, assigned_doctor_id, room_no, visit_status, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id, visit_status`,
+          [patient_id, dateToUse, visitType, false, assigned_doctor_id || null, room_no || null, 'scheduled', 'Visit record created automatically when marking as completed']
+        );
+        
+        if (!createResult.rows || createResult.rows.length === 0) {
+          throw new Error('Failed to create visit record');
+        }
+        
+        visitId = createResult.rows[0].id;
+      } else {
+        const existingVisit = checkResult.rows[0];
+        
+        // Check if already completed
+        if (existingVisit.visit_status === 'completed') {
+          return null; // Already completed
+        }
+        
+        visitId = existingVisit.id;
       }
-
-      const existingVisit = checkResult.rows[0];
       
-      // Check if already completed
-      if (existingVisit.visit_status === 'completed') {
-        return null; // Already completed
-      }
-      
-      // Update the visit status
+      // Update the visit status to completed
       const result = await db.query(
         `UPDATE patient_visits 
          SET visit_status = 'completed', updated_at = CURRENT_TIMESTAMP
-         WHERE patient_id = $1 
-           AND visit_date = $2
-           AND visit_status != 'completed'
+         WHERE id = $1
          RETURNING *`,
-        [patient_id, dateToUse]
+        [visitId]
       );
 
       if (!result.rows || result.rows.length === 0) {
-        return null; // No visit was updated (might have been completed between check and update)
+        return null; // No visit was updated (shouldn't happen, but safety check)
       }
 
       return result.rows[0];
