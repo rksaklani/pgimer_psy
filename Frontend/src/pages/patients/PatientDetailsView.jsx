@@ -1,20 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../../components/Card';
-import Badge from '../../components/Badge';
-import Select from '../../components/Select';
 import { formatDate } from '../../utils/formatters';
 import {
-  getFileStatusLabel, getCaseSeverityLabel,
-  formatAddress, formatCurrency, formatDateTime
+  getFileStatusLabel, getCaseSeverityLabel,formatDateTime
 } from '../../utils/enumMappings';
 import { isAdmin, isJrSr, isMWO, PATIENT_REGISTRATION_FORM, isJR, isSR } from '../../utils/constants';
 import {
-  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
+  FiUser, FiUsers, FiBriefcase,  FiHome, FiMapPin, FiPhone,
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
-  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
-  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck, FiDownload, FiPrinter
+  FiNavigation,  FiEdit3, FiSave, FiX, FiLayers, 
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage,  FiDownload, FiPrinter
 } from 'react-icons/fi';
 import Button from '../../components/Button';
 import { toast } from 'react-toastify';
@@ -22,64 +19,18 @@ import * as XLSX from 'xlsx-js-style';
 
 import { useGetPrescriptionByIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
 import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApiSlice';
-import FilePreview from '../../components/FilePreview';
 import ViewADL from '../adl/ViewADL';
 import ClinicalProformaDetails from '../clinical/ClinicalProformaDetails';
 import PrescriptionView from '../PrescribeMedication/PrescriptionView';
-// const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
-//   // Filter out non-DOM props that shouldn't be passed to the input element
-//   const {
-//     defaultToday,
-//     searchable,
-//     formData,
-//     customFieldName,
-//     inputLabel,
-//     options,
-//     customValue,
-//     setCustomValue,
-//     showCustomInput,
-//     containerClassName,
-//     dropdownZIndex,
-//     ...domProps
-//   } = props;
-
-//   // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
-//   const inputProps = domProps.value !== undefined ? { ...domProps } : { ...domProps, defaultValue };
-
-//   return (
-//     <div className="space-y-2">
-//       <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-//         {icon && <span className="text-primary-600">{icon}</span>}
-//         {label}
-//         {loading && (
-//           <FiLoader className="w-4 h-4 text-blue-500 animate-spin" />
-//         )}
-//       </label>
-//       <div className="relative">
-//         {icon && (
-//           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-//             <span className="text-gray-500">{icon}</span>
-//           </div>
-//         )}
-//         <input
-//           {...inputProps}
-//           className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${inputProps.className || ''}`}
-//         />
-//       </div>
-//       {error && (
-//         <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-medium">
-//           <FiX className="w-3 h-3" />
-//           {error}
-//         </p>
-//       )}
-//     </div>
-//   );
-// };
+import { selectCurrentUser } from '../../features/auth/authSlice';
+import { useSelector } from 'react-redux';
 
 
 
 const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatientData, userRole }) => {
   const navigate = useNavigate();
+  const currentUser = useSelector(selectCurrentUser);
+
   const [searchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab');
   
@@ -157,6 +108,11 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     prescriptions: false
   });
 
+
+  const isAdminUser = isAdmin(currentUser?.role);
+  const isResident = isJR(currentUser?.role);
+  const isFaculty = isSR(currentUser?.role);
+  const isJrSrUser = isJrSr(currentUser?.role);
   const toggleCard = (cardName) => {
     setExpandedCards(prev => ({
       ...prev,
@@ -164,30 +120,23 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     }));
   };
 
-  // Determine which sections to show based on CURRENT USER's role (userRole), not filled_by_role
-  // If current user is System Administrator, JR, or SR → Show all 4 sections
-  // If current user is Psychiatric Welfare Officer (MWO) → Show only Patient Details
+
   const canViewAllSections = userRole && (
     isAdmin(userRole) ||
     isJrSr(userRole)
   );
   const canViewClinicalProforma = canViewAllSections;
-
   const canViewADLFile = canViewAllSections;
   const canViewPrescriptions = canViewAllSections;
-
-
   const patientAdlFiles = adlData?.data?.adlFiles || [];
 
 
-  // Get clinical proformas for this patient - ensure it's always an array
+ 
   const patientProformas = Array.isArray(clinicalData?.data?.proformas)
     ? clinicalData.data.proformas
     : [];
 
-  // Fetch prescriptions for all proformas
-  // Always compute proformaIds as an array with exactly 10 elements (padding with null)
-  // This ensures hooks are always called with the same structure
+ 
   const proformaIds = useMemo(() => {
     const ids = patientProformas.map(p => p?.id).filter(Boolean).slice(0, 10);
     // Pad to exactly 10 elements with null to ensure consistent hook calls
@@ -197,9 +146,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     return ids;
   }, [patientProformas]);
 
-  // Always call the same number of hooks (10) in the same order
-  // This ensures React hooks are called in a consistent order every render
-  // proformaIds is guaranteed to have exactly 10 elements (padded with null if needed)
+  
   const prescriptionResult1 = useGetPrescriptionByIdQuery({ clinical_proforma_id: proformaIds[0] }, { skip: !proformaIds[0] });
   const prescriptionResult2 = useGetPrescriptionByIdQuery({ clinical_proforma_id: proformaIds[1] }, { skip: !proformaIds[1] });
   const prescriptionResult3 = useGetPrescriptionByIdQuery({ clinical_proforma_id: proformaIds[2] }, { skip: !proformaIds[2] });
@@ -2347,7 +2294,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
         </Card>
       )} */}
 
-<div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
+{isResident || isFaculty || isJrSrUser || isAdminUser &&<div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
 
 <Button
   type="button"
@@ -2387,6 +2334,8 @@ Print All
   View All Patient
 </Button>
 </div>
+
+}
       </div>
     </div>
   );

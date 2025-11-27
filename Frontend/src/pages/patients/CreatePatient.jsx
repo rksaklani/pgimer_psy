@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import {
-  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
+  FiUser, FiUsers, FiBriefcase,  FiHome, FiMapPin, FiPhone,
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
-  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
-  FiChevronDown, FiChevronUp, FiArrowRight, FiCheck
+  FiNavigation,  FiEdit3, FiSave, FiX, FiLayers, 
+  FiChevronDown, FiChevronUp, FiArrowRight, 
 } from 'react-icons/fi';
-import { useCreatePatientMutation, useAssignPatientMutation, useCreatePatientCompleteMutation, useUpdatePatientMutation } from '../../features/patients/patientsApiSlice';
+import {  useAssignPatientMutation, useCreatePatientCompleteMutation, useUpdatePatientMutation } from '../../features/patients/patientsApiSlice';
 import { useCreatePatientFilesMutation } from '../../features/patients/patientFilesApiSlice';
 import { selectCurrentUser, selectCurrentToken } from '../../features/auth/authSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
@@ -26,9 +26,11 @@ import FileUpload from '../../components/FileUpload';
 import {
   MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
-  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
-  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS
+  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, UNIT_DAYS_OPTIONS,
+   isSR, isJR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS
 } from '../../utils/constants';
+
+
 
 
 const CreatePatient = () => {
@@ -39,11 +41,7 @@ const CreatePatient = () => {
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
-  const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
-  const [createPatientFiles, { isLoading: isUploadingFiles }] = useCreatePatientFilesMutation();
-  const currentUser = useSelector(selectCurrentUser);
   const token = useSelector(selectCurrentToken);
-  // State declarations first
   const [errors, setErrors] = useState({});
   const [expandedPatientDetails, setExpandedPatientDetails] = useState(true);
   const [currentStep, setCurrentStep] = useState(1); // 1 for Out Patient Card, 2 for remaining sections
@@ -65,6 +63,9 @@ const CreatePatient = () => {
   const [sameAsPermanent, setSameAsPermanent] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
 
+
+  
+  
   // Restore step state from localStorage on mount and after authentication
   useEffect(() => {
     const savedPatientId = localStorage.getItem('createPatient_patientId');
@@ -314,25 +315,57 @@ const CreatePatient = () => {
 
   const validate = (step = 1) => {
     const newErrors = {};
+    const missingFields = [];
 
     // Validate new patient data - check both main form and quick entry fields
-    const patientName = formData.name || '';
+    const patientName = (formData.name || '').trim();
     const patientSex = formData.sex || '';
     const patientAge = formData.age || '';
-    const patientCRNo = formData.cr_no || '';
+    const addressLine = (formData.address_line || '').trim();
+    const state = (formData.state || '').trim();
+    const district = (formData.district || '').trim();
+    const city = (formData.city || '').trim();
+    const pinCode = (formData.pin_code || '').trim();
 
-    if (!patientName || !patientName.trim()) newErrors.patientName = 'Name is required';
-    if (!patientSex) newErrors.patientSex = 'Sex is required';
-    if (!patientAge) newErrors.patientAge = 'Age is required';
-
+    if (!patientName) {
+      newErrors.patientName = 'Name is required';
+      missingFields.push('Name');
+    }
+    if (!patientSex) {
+      newErrors.patientSex = 'Sex is required';
+      missingFields.push('Sex');
+    }
+    if (!patientAge) {
+      newErrors.patientAge = 'Age is required';
+      missingFields.push('Age');
+    }
 
     // Step 1 specific validations (Out Patient Card)
     if (step === 1) {
-      // Add any step 1 specific validations here if needed
+      if (!addressLine) {
+        newErrors.address_line = 'Address Line is required';
+        missingFields.push('Address Line');
+      }
+      if (!state) {
+        newErrors.state = 'State is required';
+        missingFields.push('State');
+      }
+      if (!district) {
+        newErrors.district = 'District is required';
+        missingFields.push('District');
+      }
+      if (!city) {
+        newErrors.city = 'City/Town/Village is required';
+        missingFields.push('City/Town/Village');
+      }
+      if (!pinCode) {
+        newErrors.pin_code = 'Pin Code is required';
+        missingFields.push('Pin Code');
+      }
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { isValid: Object.keys(newErrors).length === 0, missingFields };
   };
 
 
@@ -343,8 +376,12 @@ const CreatePatient = () => {
   const handleStep1Submit = async (e) => {
     e.preventDefault();
 
-    if (!validate(1)) {
-      toast.error('Please fix the errors in the form');
+    const validationResult = validate(1);
+    if (!validationResult.isValid) {
+      // Show toaster error for each missing field
+      validationResult.missingFields.forEach((field) => {
+        toast.error(`Please fill ${field} field`);
+      });
       return;
     }
 
@@ -355,19 +392,7 @@ const CreatePatient = () => {
     const patientCRNo = (formData.cr_no || '').trim();
 
     try {
-      // Validate required fields
-      if (!patientName) {
-        toast.error('Patient name is required');
-        return;
-      }
-      if (!patientSex) {
-        toast.error('Patient sex is required');
-        return;
-      }
-      if (!patientAge) {
-        toast.error('Patient age is required');
-        return;
-      }
+      // Additional validation (already checked in validate function, but keeping for safety)
 
       // Check if CR number already exists (if provided)
       if (patientCRNo && patientCRNo.length >= 3) {
@@ -399,12 +424,6 @@ const CreatePatient = () => {
       const parseIntSafe = (val) => {
         if (val === '' || val === undefined || val === null) return null;
         const parsed = parseInt(val);
-        return isNaN(parsed) ? null : parsed;
-      };
-
-      const parseFloatSafe = (val) => {
-        if (val === '' || val === undefined || val === null) return null;
-        const parsed = parseFloat(val);
         return isNaN(parsed) ? null : parsed;
       };
 
@@ -504,6 +523,16 @@ const CreatePatient = () => {
 
     if (!patientId) {
       toast.error('Patient ID is missing. Please complete step 1 first.');
+      return;
+    }
+
+    // Validate Step 2 required fields
+    const validationResult = validate(2);
+    if (!validationResult.isValid) {
+      // Show toaster error for each missing field
+      validationResult.missingFields.forEach((field) => {
+        toast.error(`Please fill ${field} field`);
+      });
       return;
     }
 
@@ -741,7 +770,11 @@ const CreatePatient = () => {
                           />
                           <IconInput
                             icon={<FiUser className="w-4 h-4" />}
-                            label="Name"
+                            label={
+                              <span>
+                                Name <span className="text-red-500">*</span>
+                              </span>
+                            }
                             name="name"
                             value={formData.name || ''}
                             onChange={handleChange}
@@ -763,7 +796,11 @@ const CreatePatient = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                           <IconInput
                             icon={<FiClock className="w-4 h-4" />}
-                            label="Age"
+                            label={
+                              <span>
+                                Age <span className="text-red-500">*</span>
+                              </span>
+                            }
                             name="age"
                             value={formData.age || ''}
                             onChange={handleChange}
@@ -773,7 +810,11 @@ const CreatePatient = () => {
                           />
                           <div className="space-y-2">
                             <Select
-                              label="Sex"
+                              label={
+                                <span>
+                                  Sex <span className="text-red-500">*</span>
+                                </span>
+                              }
                               name="sex"
                               value={formData.sex || ''}
                               onChange={handleChange}
@@ -889,7 +930,11 @@ const CreatePatient = () => {
                             {/* Address Line */}
                             <IconInput
                               icon={<FiHome className="w-4 h-4" />}
-                              label="Address Line (House No., Street, Locality)"
+                              label={
+                                <span>
+                                  Address Line (House No., Street, Locality) <span className="text-red-500">*</span>
+                                </span>
+                              }
                               name="address_line"
                               value={formData.address_line || ''}
                               onChange={handleChange}
@@ -911,7 +956,11 @@ const CreatePatient = () => {
                               />
                               <IconInput
                                 icon={<FiMapPin className="w-4 h-4" />}
-                                label="State"
+                                label={
+                                  <span>
+                                    State <span className="text-red-500">*</span>
+                                  </span>
+                                }
                                 name="state"
                                 value={formData.state || ''}
                                 onChange={handleChange}
@@ -921,7 +970,11 @@ const CreatePatient = () => {
                               />
                               <IconInput
                                 icon={<FiLayers className="w-4 h-4" />}
-                                label="District"
+                                label={
+                                  <span>
+                                    District <span className="text-red-500">*</span>
+                                  </span>
+                                }
                                 name="district"
                                 value={formData.district || ''}
                                 onChange={handleChange}
@@ -931,7 +984,11 @@ const CreatePatient = () => {
                               />
                               <IconInput
                                 icon={<FiHome className="w-4 h-4" />}
-                                label="City/Town/Village"
+                                label={
+                                  <span>
+                                    City/Town/Village <span className="text-red-500">*</span>
+                                  </span>
+                                }
                                 name="city"
                                 value={formData.city || ''}
                                 onChange={handleChange}
@@ -945,7 +1002,11 @@ const CreatePatient = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <IconInput
                                 icon={<FiHash className="w-4 h-4" />}
-                                label="Pin Code"
+                                label={
+                                  <span>
+                                    Pin Code <span className="text-red-500">*</span>
+                                  </span>
+                                }
                                 name="pin_code"
                                 value={formData.pin_code || ''}
                                 onChange={handleChange}
@@ -1065,7 +1126,11 @@ const CreatePatient = () => {
 
                               <IconInput
                                 icon={<FiUser className="w-4 h-4" />}
-                                label="Name"
+                                label={
+                                  <span>
+                                    Name <span className="text-red-500">*</span>
+                                  </span>
+                                }
                                 name="name"
                                 value={formData.name || ''}
                                 onChange={handleChange}
@@ -1076,7 +1141,11 @@ const CreatePatient = () => {
 
                               <div className="space-y-2">
                                 <Select
-                                  label="Sex"
+                                  label={
+                                    <span>
+                                      Sex <span className="text-red-500">*</span>
+                                    </span>
+                                  }
                                   name="sex"
                                   value={formData.sex || ''}
                                   onChange={handleChange}

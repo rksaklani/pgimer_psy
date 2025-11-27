@@ -43,3 +43,33 @@ export const truncate = (str, length = 50) => {
   return str.slice(0, length) + '...';
 };
 
+
+
+export const formatDateForDatePicker = (dateValue) => {
+  if (!dateValue) return '';
+  if (typeof dateValue === 'string') {
+    // If it's already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return dateValue;
+    // If it's an ISO string with time, extract date part
+    if (dateValue.includes('T')) return dateValue.split('T')[0];
+    // Try to parse and format
+    try {
+      const date = new Date(dateValue);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch {
+      return '';
+    }
+  }
+  if (dateValue instanceof Date) {
+    const year = dateValue.getFullYear();
+    const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+    const day = String(dateValue.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+};
