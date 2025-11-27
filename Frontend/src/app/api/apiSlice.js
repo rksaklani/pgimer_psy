@@ -134,16 +134,18 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     );
 
     if (refreshResult?.data?.success && refreshResult?.data?.data?.accessToken) {
-      // Store the new token
+      // Store the new token - use updateToken to avoid unnecessary re-renders
+      // This prevents form data from being cleared during automatic token refresh
       const newToken = refreshResult.data.data.accessToken;
       const state = api.getState();
-      api.dispatch({
-        type: 'auth/setCredentials',
-        payload: {
-          user: state.auth.user,
-          token: newToken
-        }
-      });
+      
+      // Only update if token actually changed
+      if (state.auth.token !== newToken) {
+        api.dispatch({
+          type: 'auth/updateToken',
+          payload: newToken
+        });
+      }
 
       // Retry the original query with new token
       result = await baseQuery(args, api, extraOptions);

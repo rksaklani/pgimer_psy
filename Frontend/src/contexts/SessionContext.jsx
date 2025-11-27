@@ -86,13 +86,18 @@ export const SessionProvider = ({ children }) => {
         const result = await refreshToken().unwrap();
 
         if (result?.data?.accessToken) {
-          dispatch({
-            type: "auth/setCredentials",
-            payload: {
-              user: JSON.parse(localStorage.getItem("user")),
-              token: result.data.accessToken
-            }
-          });
+          // Only update token if it's different to avoid unnecessary re-renders
+          // This prevents form data from being cleared during token refresh
+          const newToken = result.data.accessToken;
+          
+          if (token !== newToken) {
+            // Use updateToken action which only updates the token
+            // This prevents full state updates and form data loss
+            dispatch({
+              type: "auth/updateToken",
+              payload: newToken
+            });
+          }
 
           lastActivityRef.current = Date.now();
         }
@@ -104,7 +109,7 @@ export const SessionProvider = ({ children }) => {
     }, 90000); // 🔁 90 seconds
 
     return () => clearInterval(refreshInterval);
-  }, [token, refreshToken, updateActivity, dispatch, isSessionExpired, handleSessionExpired]);
+  }, [token, refreshToken, dispatch, isSessionExpired, handleSessionExpired]);
 
   // Every 30 seconds -> check session status
   useEffect(() => {
@@ -117,7 +122,18 @@ export const SessionProvider = ({ children }) => {
       if (diff < 40000) return;
 
       try {
-        await refreshToken().unwrap();
+        const result = await refreshToken().unwrap();
+        
+        // Only update token if it changed to prevent unnecessary re-renders
+        if (result?.data?.accessToken && result.data.accessToken !== token) {
+          // Use updateToken action which only updates the token
+          // This prevents full state updates and form data loss
+          dispatch({
+            type: "auth/updateToken",
+            payload: result.data.accessToken
+          });
+        }
+        
         lastActivityRef.current = Date.now();
       } catch (err) {
         if (err?.data?.code === "SESSION_EXPIRED") {
@@ -127,7 +143,7 @@ export const SessionProvider = ({ children }) => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [token, refreshToken, isSessionExpired, handleSessionExpired]);
+  }, [token, refreshToken, dispatch, isSessionExpired, handleSessionExpired]);
 
   // Reset session expired state when user logs in (token changes from null to a value)
   // This ensures the session expired popup disappears after successful login

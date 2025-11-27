@@ -112,10 +112,19 @@ const authSlice = createSlice({
       state.user = normalizedUser;
       localStorage.setItem('user', JSON.stringify(normalizedUser));
     },
+    updateToken: (state, action) => {
+      // Only update the token without affecting other state
+      // This prevents unnecessary re-renders and form data loss during token refresh
+      const newToken = action.payload;
+      if (state.token !== newToken) {
+        state.token = newToken;
+        localStorage.setItem('token', newToken);
+      }
+    },
   },
 });
 
-export const { setCredentials, setOTPRequired, logout, updateUser } = authSlice.actions;
+export const { setCredentials, setOTPRequired, logout, updateUser, updateToken } = authSlice.actions;
 
 export default authSlice.reducer;
 
