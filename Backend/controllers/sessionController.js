@@ -29,12 +29,12 @@ class SessionController {
         });
       }
 
-      // Check if user has been active within last 15 minutes
+      // Check if user has been active within last 10 seconds
       const lastActivity = new Date(tokenRecord.last_activity);
       const now = new Date();
-      const inactiveMinutes = (now - lastActivity) / (1000 * 60);
+      const inactiveSeconds = (now - lastActivity) / 1000;
 
-      if (inactiveMinutes > 1) {
+      if (inactiveSeconds > 10) {
         // Session expired due to inactivity
         await tokenRecord.revoke();
         
@@ -76,7 +76,7 @@ class SessionController {
         success: true,
         data: {
           accessToken,
-          expiresIn: 300 // 5 minutes in seconds
+          expiresIn: 10 // 5 minutes in seconds
         }
       });
     } catch (error) {
@@ -186,12 +186,18 @@ class SessionController {
         });
       }
 
-      // Calculate time until session expires (15 minutes from last activity)
-      const lastActivity = new Date(tokenRecord.last_activity);
-      const sessionExpiresAt = new Date(lastActivity.getTime() + 15 * 60 * 1000);
-      const now = new Date();
-      const secondsUntilExpiry = Math.max(0, Math.floor((sessionExpiresAt - now) / 1000));
+      // // Calculate time until session expires (15 minutes from last activity)
+      // const lastActivity = new Date(tokenRecord.last_activity);
+      // const sessionExpiresAt = new Date(lastActivity.getTime() + 15 * 60 * 1000);
+      // const now = new Date();
+      // const secondsUntilExpiry = Math.max(0, Math.floor((sessionExpiresAt - now) / 1000));
 
+
+      // Calculate time until session expires (10 seconds from last activity)
+const lastActivity = new Date(tokenRecord.last_activity);
+const sessionExpiresAt = new Date(lastActivity.getTime() + 10 * 1000);
+const now = new Date();
+const secondsUntilExpiry = Math.max(0, Math.floor((sessionExpiresAt - now) / 1000))
       res.json({
         success: true,
         data: {

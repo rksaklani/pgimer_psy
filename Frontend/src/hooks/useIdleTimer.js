@@ -20,6 +20,8 @@ export function useIdleTimer({
   const timeoutIdRef = useRef(null);
   const isIdleRef = useRef(false);
   const lastActivityRef = useRef(Date.now());
+  const lastActiveCallRef = useRef(0);
+  const ACTIVE_CALL_THROTTLE = 3000; // Call onActive at most once every 3 seconds
 
   // Reset the idle timer
   const resetTimer = useCallback(() => {
@@ -34,8 +36,11 @@ export function useIdleTimer({
       clearTimeout(timeoutIdRef.current);
     }
 
-    // Call onActive if user was previously idle
-    if (wasIdle && onActive) {
+    // Call onActive when user transitions from idle to active OR if enough time has passed
+    // This ensures activity is updated regularly when user is active (throttled to every 3 seconds)
+    const now = Date.now();
+    if (onActive && (wasIdle || (now - lastActiveCallRef.current) >= ACTIVE_CALL_THROTTLE)) {
+      lastActiveCallRef.current = now;
       onActive();
     }
 

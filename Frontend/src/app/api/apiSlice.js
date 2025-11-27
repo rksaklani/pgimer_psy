@@ -34,6 +34,19 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       return result;
     }
 
+    // Update activity before refreshing to ensure backend sees recent activity
+    // This is critical for the 10-second inactivity check
+    try {
+      await baseQuery(
+        { url: '/session/activity', method: 'POST' },
+        api,
+        extraOptions
+      );
+    } catch (activityError) {
+      // If activity update fails, still try to refresh
+      console.warn('Failed to update activity before refresh:', activityError);
+    }
+
     // Try to refresh the token
     const refreshResult = await baseQuery(
       { url: '/session/refresh', method: 'POST' },
