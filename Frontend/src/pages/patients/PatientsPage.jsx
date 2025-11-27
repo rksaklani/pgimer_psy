@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { 
   FiPlus, FiSearch, FiTrash2, FiEye,  FiEdit, FiUsers, 
    FiDownload,  FiClock, FiPrinter,
-  FiHeart, FiFileText, FiShield, FiTrendingUp
+  FiHeart, FiFileText, FiShield, FiTrendingUp, FiX
 } from 'react-icons/fi';
 import { useGetAllPatientsQuery, useDeletePatientMutation, useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
 import { selectCurrentUser, selectCurrentToken } from '../../features/auth/authSlice';
@@ -31,14 +31,63 @@ const PatientsPage = () => {
     setPage(1);
   }, [search]);
 
+  // Fetch patients - if searching, fetch more results for client-side filtering
+  const fetchLimit = search.trim() ? 100 : limit; // Fetch more when searching to allow client-side filtering
+  
   const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
-    page,
-    limit,
-    search: search.trim() || undefined // Only include search if it has a value
+    page: search.trim() ? 1 : page, // Always fetch page 1 when searching
+    limit: fetchLimit,
+    search: undefined // Don't send search to backend, we'll filter client-side
   }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnMountOrArgChange: true,
   });
+
+  // Client-side filtering by all fields including doctor name
+  const filteredPatients = data?.data?.patients ? (() => {
+    if (!search.trim()) {
+      // No search - return paginated results
+      const startIndex = (page - 1) * limit;
+      return data.data.patients.slice(startIndex, startIndex + limit);
+    }
+
+    const searchLower = search.trim().toLowerCase();
+    
+    // Filter by all searchable fields including doctor name
+    const filtered = data.data.patients.filter(patient => {
+      return (
+        patient.name?.toLowerCase().includes(searchLower) ||
+        patient.cr_no?.toLowerCase().includes(searchLower) ||
+        patient.psy_no?.toLowerCase().includes(searchLower) ||
+        patient.adl_no?.toLowerCase().includes(searchLower) ||
+        patient.assigned_doctor_name?.toLowerCase().includes(searchLower) ||
+        patient.assigned_doctor_role?.toLowerCase().includes(searchLower)
+      );
+    });
+
+    // Apply pagination to filtered results
+    const startIndex = (page - 1) * limit;
+    return filtered.slice(startIndex, startIndex + limit);
+  })() : [];
+
+  // Calculate total pages for filtered results
+  const totalFiltered = search.trim() 
+    ? (data?.data?.patients?.filter(patient => {
+        const searchLower = search.trim().toLowerCase();
+        return (
+          patient.name?.toLowerCase().includes(searchLower) ||
+          patient.cr_no?.toLowerCase().includes(searchLower) ||
+          patient.psy_no?.toLowerCase().includes(searchLower) ||
+          patient.adl_no?.toLowerCase().includes(searchLower) ||
+          patient.assigned_doctor_name?.toLowerCase().includes(searchLower) ||
+          patient.assigned_doctor_role?.toLowerCase().includes(searchLower)
+        );
+      }).length || 0)
+    : (data?.data?.pagination?.total || 0);
+  
+  const totalPages = search.trim() 
+    ? Math.ceil(totalFiltered / limit)
+    : (data?.data?.pagination?.pages || 1);
  
   const [deletePatient] = useDeletePatientMutation();
  
@@ -93,14 +142,29 @@ const PatientsPage = () => {
   
 
   const handleExport = () => {
-    if (!data?.data?.patients || data.data.patients.length === 0) {
+    // Export filtered patients if searching, otherwise all patients
+    const patientsToExport = search.trim() 
+      ? (data?.data?.patients?.filter(patient => {
+          const searchLower = search.trim().toLowerCase();
+          return (
+            patient.name?.toLowerCase().includes(searchLower) ||
+            patient.cr_no?.toLowerCase().includes(searchLower) ||
+            patient.psy_no?.toLowerCase().includes(searchLower) ||
+            patient.adl_no?.toLowerCase().includes(searchLower) ||
+            patient.assigned_doctor_name?.toLowerCase().includes(searchLower) ||
+            patient.assigned_doctor_role?.toLowerCase().includes(searchLower)
+          );
+        }) || [])
+      : (data?.data?.patients || []);
+
+    if (!patientsToExport || patientsToExport.length === 0) {
       toast.warning('No patient data available to export');
       return;
     }
     
     try {
-      // Format all patient data for export
-      const formattedData = formatPatientsForExport(data.data.patients);
+      // Format patient data for export
+      const formattedData = formatPatientsForExport(patientsToExport);
       
       // Generate filename with current date
       const filename = `patients_export_${new Date().toISOString().split('T')[0]}`;
@@ -1550,11 +1614,20 @@ const PatientsPage = () => {
                   <FiSearch className="w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
                 </div>
                 <Input
-                  placeholder="Search by name, CR number, or PSY number..."
+                  placeholder="Search by CR No, Patient Name, PSY No, Doctor Name, or Doctor Role..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="pl-12 pr-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Clear search"
+                  >
+                    <FiX className="w-5 h-5" />
+                  </button>
+                )}
               </div>
               {!isMWO(user?.role) && (
                 <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
@@ -1571,7 +1644,7 @@ const PatientsPage = () => {
                   variant="outline"
                   className="h-12 px-5 bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleExport}
-                  disabled={!data?.data?.patients || data.data.patients.length === 0}
+                  disabled={filteredPatients.length === 0 && (!data?.data?.patients || data.data.patients.length === 0)}
                 >
                   <FiDownload className="mr-2" />
                   Export
@@ -1591,7 +1664,7 @@ const PatientsPage = () => {
               <p className="mt-6 text-gray-600 font-medium text-lg">Loading patients...</p>
               <p className="mt-2 text-gray-500 text-sm">Please wait while we fetch the data</p>
             </div>
-          ) : data?.data?.patients?.length === 0 ? (
+          ) : filteredPatients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
                 <FiUsers className="w-12 h-12 text-gray-400" />
@@ -1599,10 +1672,22 @@ const PatientsPage = () => {
               <p className="text-xl font-semibold text-gray-700 mb-2">No patients found</p>
               <p className="text-gray-500 text-center max-w-md">
                 {search 
-                  ? `No patients match your search "${search}". Try a different search term.`
-                  : 'There are no patients in the system yet. Add your first patient to get started.'}
+                  ? `No patients match your search "${search}". Try searching by CR No, Patient Name, PSY No, Doctor Name, or Doctor Role.`
+                  : data?.data?.patients?.length === 0
+                    ? 'There are no patients in the system yet. Add your first patient to get started.'
+                    : 'No patients match the current filters. Try adjusting your search criteria.'}
               </p>
-              {user?.role !== 'MWO' && !search && (
+              {search && (
+                <Button
+                  onClick={() => setSearch('')}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  <FiX className="mr-2" />
+                  Clear Search
+                </Button>
+              )}
+              {user?.role !== 'MWO' && !search && data?.data?.patients?.length === 0 && (
                 <Link to="/patients/new" className="mt-6">
                   <Button className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg">
                     <FiPlus className="mr-2" />
@@ -1613,20 +1698,33 @@ const PatientsPage = () => {
             </div>
           ) : (
             <>
+              {/* Search Results Info */}
+              {search && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">{totalFiltered}</span> patient(s) found matching "<span className="font-semibold">{search}</span>"
+                    {totalPages > 1 && (
+                      <span className="ml-2 text-blue-600">(Page {page} of {totalPages})</span>
+                    )}
+                  </p>
+                </div>
+              )}
+              
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                 <Table
                   columns={columns}
-                  data={data?.data?.patients || []}
+                  data={filteredPatients}
                   loading={isLoading}
                 />
               </div>
 
-              {data?.data?.pagination && data.data.pagination.pages > 1 && (
+              {/* Pagination */}
+              {totalPages > 1 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-4">
                   <Pagination
-                    currentPage={data.data.pagination.page}
-                    totalPages={data.data.pagination.pages}
-                    totalItems={data.data.pagination.total}
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalItems={totalFiltered}
                     itemsPerPage={limit}
                     onPageChange={setPage}
                   />
