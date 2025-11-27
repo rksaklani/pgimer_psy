@@ -40,6 +40,8 @@ const CreatePatient = () => {
   const [createRecord, { isLoading }] = useCreatePatientCompleteMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
+  const [createProforma] = useCreateClinicalProformaMutation();
+  const [createPatientFiles] = useCreatePatientFilesMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
   const token = useSelector(selectCurrentToken);
   const [errors, setErrors] = useState({});

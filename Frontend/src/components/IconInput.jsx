@@ -9,8 +9,14 @@ export const IconInput = ({
   defaultValue, 
   ...props 
 }) => {
+  // Convert null/undefined values to empty string to avoid React warnings
+  const normalizedValue = props.value === null || props.value === undefined ? '' : props.value;
+  const normalizedDefaultValue = defaultValue === null || defaultValue === undefined ? '' : defaultValue;
+  
   // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
-  const inputProps = props.value !== undefined ? { ...props } : { ...props, defaultValue };
+  const inputProps = normalizedValue !== undefined && normalizedValue !== '' 
+    ? { ...props, value: normalizedValue } 
+    : { ...props, value: normalizedValue, defaultValue: normalizedDefaultValue };
   
   return (
     <div className="space-y-2">
