@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const { param } = require('express-validator');
 const PatientFileController = require('../controllers/patientFileController');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
-const { validateId } = require('../middleware/validation');
+const { validateId, handleValidationErrors } = require('../middleware/validation');
 const { handleUpload } = require('../middleware/upload');
 
 /**
@@ -115,7 +116,8 @@ router.post('/create',
 router.put('/update/:patient_id', 
   authenticateToken, 
   authorizeRoles('Admin', 'Psychiatric Welfare Officer', 'Faculty', 'Resident'), 
-  validateId, 
+  param('patient_id').isInt({ min: 1 }).withMessage('Valid integer patient ID is required'),
+  handleValidationErrors,
   handleUpload, 
   PatientFileController.updatePatientFiles
 );

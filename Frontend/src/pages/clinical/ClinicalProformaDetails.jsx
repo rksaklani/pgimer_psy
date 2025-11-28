@@ -13,6 +13,7 @@ import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import FilePreview from '../../components/FilePreview';
 import { formatDate } from '../../utils/formatters';
+import { getDoctorDecisionLabel } from '../../utils/enumMappings';
 
 const ClinicalProformaDetails = ({ proforma }) => {
   const navigate = useNavigate();
@@ -886,7 +887,7 @@ const ClinicalProformaDetails = ({ proforma }) => {
               <label className="text-sm font-medium text-gray-500">Doctor Decision</label>
               <div className="mt-1">
                 <Badge variant={proforma.doctor_decision === 'complex_case' ? 'warning' : 'success'}>
-                  {proforma.doctor_decision === 'complex_case' ? 'Complex Case' : 'Simple Case'}
+                  {getDoctorDecisionLabel(proforma.doctor_decision) || 'N/A'}
                 </Badge>
               </div>
             </div>

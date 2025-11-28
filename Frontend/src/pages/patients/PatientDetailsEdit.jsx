@@ -58,11 +58,20 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filesToRemove, setFilesToRemove] = useState([]);
   const { data: patientFilesData, refetch: refetchFiles } = useGetPatientFilesQuery(patient?.id, {
-    skip: !patient?.id
+    skip: !patient?.id,
+    refetchOnMountOrArgChange: true
   });
   // Get existing files from API
   const existingFiles = patientFilesData?.data?.files || [];
   const canEditFiles = patientFilesData?.data?.can_edit !== false; // Default to true if not specified
+  
+  // Debug: Log files data
+  useEffect(() => {
+    if (patientFilesData) {
+      console.log('[PatientDetailsEdit] Patient files data:', patientFilesData);
+      console.log('[PatientDetailsEdit] Existing files:', existingFiles);
+    }
+  }, [patientFilesData, existingFiles]);
 
   const isAdminUser = isAdmin(currentUser?.role);
   const isResident = isJR(currentUser?.role);
@@ -1985,10 +1994,12 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
           files_to_remove: filesToRemove
         }).unwrap();
         
-        // Refetch files after update
-        if (refetchFiles) {
-          refetchFiles();
-        }
+        // Refetch files after update with a small delay to ensure backend processing is complete
+        setTimeout(() => {
+          if (refetchFiles) {
+            refetchFiles();
+          }
+        }, 500);
       } else {
         // Update patient without files using JSON
         await updatePatient({

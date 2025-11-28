@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import {
   useGetClinicalProformaByIdQuery,
   useUpdateClinicalProformaMutation,
+  useCreateClinicalProformaMutation,
   useGetClinicalOptionsQuery,
   useAddClinicalOptionMutation,
   useDeleteClinicalOptionMutation,
@@ -61,8 +62,13 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
   // Check if the case is already marked as complex (from original data, not form state)
   // This determines if we should disable the doctor_decision dropdown
-  const isAlreadyComplex = proforma?.doctor_decision === 'complex_case' || 
-                           propInitialData?.doctor_decision === 'complex_case';
+  // Only disable if case is already complex AND has an ADL file (to prevent changing from complex to simple)
+  // Allow changing from simple to complex (no ADL file exists yet)
+  // Explicitly check for truthy adl_file_id (not null, undefined, 0, or empty string)
+  const hasAdlFile = (id) => id !== null && id !== undefined && id !== 0 && id !== '';
+  const isAlreadyComplex = (proforma?.doctor_decision === 'complex_case' && hasAdlFile(proforma?.adl_file_id)) || 
+                           (propInitialData?.doctor_decision === 'complex_case' && hasAdlFile(propInitialData?.adl_file_id));
+  
 
   // Determine if this is create or update mode
   // Priority:
@@ -112,8 +118,9 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
   const doctors = doctorsData?.data?.doctors || [];
 
-  // Update mutations
+  // Update and Create mutations
   const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
+  const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
   // const [updateADLFile] = useUpdateADLFileMutation();
   const [createADLFile, { isLoading: isCreatingADLFile }] = useCreateADLFileMutation();
   // Helper functions
@@ -360,6 +367,19 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   const [formData, setFormData] = useState(initialFormData || defaultFormData);
   const [errors, setErrors] = useState({});
   const currentUser = useSelector(selectCurrentUser);
+
+  // Debug logging (moved here after formData is defined)
+  useEffect(() => {
+    console.log('[EditClinicalProforma] Doctor Decision Debug:', {
+      proformaDecision: proforma?.doctor_decision,
+      propInitialDataDecision: propInitialData?.doctor_decision,
+      proformaAdlFileId: proforma?.adl_file_id,
+      propInitialDataAdlFileId: propInitialData?.adl_file_id,
+      isAlreadyComplex,
+      formDataDecision: formData?.doctor_decision,
+      dropdownDisabled: isAlreadyComplex
+    });
+  }, [proforma?.doctor_decision, propInitialData?.doctor_decision, proforma?.adl_file_id, propInitialData?.adl_file_id, isAlreadyComplex, formData?.doctor_decision]);
 
   // File upload state
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -670,6 +690,8 @@ console.log("existingPrescriptionData", existingPrescriptionData);
 
   // Track previous initialFormData to avoid unnecessary updates
   const prevInitialDataRef = useRef(null);
+  // Track if user has manually edited the form to prevent overwriting their changes
+  const userHasEditedRef = useRef(false);
 
   // Update formData when initialFormData changes (only on mount or when initialData actually changes)
   useEffect(() => {
@@ -682,6 +704,8 @@ console.log("existingPrescriptionData", existingPrescriptionData);
       // 4. Key fields have changed (doctor_decision, diagnosis, etc.)
       const proformaIdChanged = propInitialData?.id && prevData?.proformaId !== propInitialData.id;
       const patientIdChanged = prevData?.patient_id !== initialFormData.patient_id;
+      // Check if key fields in initialFormData have changed (not user form changes)
+      // Only update if the initial data source (propInitialData) has actually changed
       const keyFieldsChanged = prevData?.doctor_decision !== initialFormData.doctor_decision ||
         prevData?.diagnosis !== initialFormData.diagnosis ||
         prevData?.visit_date !== initialFormData.visit_date;
@@ -690,18 +714,27 @@ console.log("existingPrescriptionData", existingPrescriptionData);
       const propDataChanged = propInitialData && (
         !prevData?.proformaId ||
         prevData.proformaId !== propInitialData.id ||
-        !prevData.proformaId && propInitialData.id
+        (!prevData.proformaId && propInitialData.id)
       );
 
-      const shouldUpdate = !prevData ||
+      // Only update if:
+      // 1. No previous data exists, OR
+      // 2. Patient ID changed (different patient), OR
+      // 3. Proforma ID changed (different proforma), OR
+      // 4. propInitialData changed (different proforma passed as prop), OR
+      // 5. Key fields in initialFormData changed AND it's the same patient (initial data was updated externally)
+      // DO NOT update if user is just changing form fields - only update if the source data changed
+      // IMPORTANT: Don't reset if user has manually edited the form (unless it's a different patient/proforma)
+      const shouldUpdate = (!prevData && !userHasEditedRef.current) ||
         patientIdChanged ||
         proformaIdChanged ||
-        propDataChanged ||
-        (keyFieldsChanged && prevData.patient_id === initialFormData.patient_id);
+        (propDataChanged && !userHasEditedRef.current) ||
+        (keyFieldsChanged && prevData.patient_id === initialFormData.patient_id && prevData.proformaId === (propInitialData?.id || null) && !userHasEditedRef.current);
 
       if (shouldUpdate) {
-
         setFormData(initialFormData);
+        // Reset the user edited flag when we update from external source
+        userHasEditedRef.current = false;
         // Notify parent of initial form data (defer to avoid setState during render)
         if (onFormDataChange) {
           // Use setTimeout to defer the call until after render
@@ -713,8 +746,6 @@ console.log("existingPrescriptionData", existingPrescriptionData);
           ...initialFormData,
           proformaId: propInitialData?.id || null
         };
-      } else {
-
       }
     }
   }, [initialFormData, onFormDataChange, propInitialData?.id]);
@@ -722,11 +753,33 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
+    
+    // Debug logging for doctor_decision changes
+    if (name === 'doctor_decision') {
+      console.log('[EditClinicalProforma] Doctor Decision Change:', {
+        name,
+        newValue,
+        currentValue: formData.doctor_decision,
+        event: e
+      });
+    }
+    
+    // Mark that user has manually edited the form
+    userHasEditedRef.current = true;
     setFormData((prev) => {
       const updated = {
         ...prev,
         [name]: newValue,
       };
+      
+      // Debug logging after state update
+      if (name === 'doctor_decision') {
+        console.log('[EditClinicalProforma] FormData Updated:', {
+          previous: prev.doctor_decision,
+          updated: updated.doctor_decision
+        });
+      }
+      
       // Notify parent component of form data changes, especially doctor_decision
       // Defer to avoid setState during render warning
       if (onFormDataChange) {
@@ -748,7 +801,7 @@ console.log("existingPrescriptionData", existingPrescriptionData);
 
     // Prevent changing from complex case to simple case
     if (isAlreadyComplex && formData.doctor_decision !== 'complex_case') {
-      toast.error('Cannot change from Complex Case to Simple Case. The case must remain complex.');
+      toast.error('Cannot change from Instantly Requires Detailed Work-Up to Requires Detailed Workup on Next Follow-Up. The case must remain complex.');
       setFormData(prev => ({ ...prev, doctor_decision: 'complex_case' }));
       return;
     }
@@ -820,66 +873,76 @@ console.log("existingPrescriptionData", existingPrescriptionData);
         return;
       }
 
-      // CASE 2: Editing an existing proforma  
-      if (!proforma.id || !id) {
-        toast.error("Cannot update: Clinical proforma not found. Please create a new one first.");
-        return;
-      }
-
-      const updateData = {
-        id: proforma.id,
-        patient_id: formData.patient_id,
+      // CASE 2: Create new proforma or Update existing proforma
+      const proformaData = {
+        patient_id: parseInt(formData.patient_id, 10),
         visit_date: formData.visit_date,
         visit_type: formData.visit_type,
-        room_no: formData.room_no,
-        assigned_doctor: formData.assigned_doctor,
-        informant_present: formData.informant_present,
-        nature_of_information: formData.nature_of_information,
-        onset_duration: formData.onset_duration,
-        course: formData.course,
-        precipitating_factor: formData.precipitating_factor,
-        illness_duration: formData.illness_duration,
-        current_episode_since: formData.current_episode_since,
-        mood: join(formData.mood),
-        behaviour: join(formData.behaviour),
-        speech: join(formData.speech),
-        thought: join(formData.thought),
-        perception: join(formData.perception),
-        somatic: join(formData.somatic),
-        bio_functions: join(formData.bio_functions),
-        adjustment: join(formData.adjustment),
-        cognitive_function: join(formData.cognitive_function),
-        fits: join(formData.fits),
-        sexual_problem: join(formData.sexual_problem),
-        substance_use: join(formData.substance_use),
-        past_history: formData.past_history,
-        family_history: formData.family_history,
-        associated_medical_surgical: join(formData.associated_medical_surgical),
-        mse_behaviour: join(formData.mse_behaviour),
-        mse_affect: join(formData.mse_affect),
-        mse_thought: formData.mse_thought,
-        mse_delusions: formData.mse_delusions,
-        mse_perception: join(formData.mse_perception),
-        mse_cognitive_function: join(formData.mse_cognitive_function),
-        gpe: formData.gpe,
-        diagnosis: formData.diagnosis,
-        icd_code: formData.icd_code,
-        disposal: formData.disposal,
-        workup_appointment: formData.workup_appointment,
-        referred_to: formData.referred_to,
-        treatment_prescribed: formData.treatment_prescribed,
-        doctor_decision: formData.doctor_decision,
-        // case_severity: formData.case_severity,
+        room_no: formData.room_no || null,
+        assigned_doctor: formData.assigned_doctor ? parseInt(formData.assigned_doctor, 10) : null,
+        informant_present: formData.informant_present ?? true,
+        nature_of_information: formData.nature_of_information || null,
+        onset_duration: formData.onset_duration || null,
+        course: formData.course || null,
+        precipitating_factor: formData.precipitating_factor || null,
+        illness_duration: formData.illness_duration || null,
+        current_episode_since: formData.current_episode_since || null,
+        mood: join(formData.mood) || null,
+        behaviour: join(formData.behaviour) || null,
+        speech: join(formData.speech) || null,
+        thought: join(formData.thought) || null,
+        perception: join(formData.perception) || null,
+        somatic: join(formData.somatic) || null,
+        bio_functions: join(formData.bio_functions) || null,
+        adjustment: join(formData.adjustment) || null,
+        cognitive_function: join(formData.cognitive_function) || null,
+        fits: join(formData.fits) || null,
+        sexual_problem: join(formData.sexual_problem) || null,
+        substance_use: join(formData.substance_use) || null,
+        past_history: formData.past_history || null,
+        family_history: formData.family_history || null,
+        associated_medical_surgical: join(formData.associated_medical_surgical) || null,
+        mse_behaviour: join(formData.mse_behaviour) || null,
+        mse_affect: join(formData.mse_affect) || null,
+        mse_thought: formData.mse_thought || null,
+        mse_delusions: formData.mse_delusions || null,
+        mse_perception: join(formData.mse_perception) || null,
+        mse_cognitive_function: join(formData.mse_cognitive_function) || null,
+        gpe: formData.gpe || null,
+        diagnosis: formData.diagnosis || null,
+        icd_code: formData.icd_code || null,
+        disposal: formData.disposal || null,
+        workup_appointment: formData.workup_appointment || null,
+        referred_to: formData.referred_to || null,
+        treatment_prescribed: formData.treatment_prescribed || null,
+        doctor_decision: formData.doctor_decision || 'simple_case',
+        // case_severity: formData.case_severity || null,
       };
 
+      let savedProforma = null;
+
       // ==============================
-      // TRY–CATCH #1: Update Proforma
+      // TRY–CATCH #1: Create or Update Proforma
       // ==============================
       try {
-        await updateProforma(updateData).unwrap();
-        toast.success("Clinical proforma updated successfully!");
+        if (proforma?.id) {
+          // Update existing proforma
+          const updateData = { ...proformaData, id: proforma.id };
+          const result = await updateProforma(updateData).unwrap();
+          savedProforma = result?.data?.proforma || proforma;
+          toast.success("Clinical proforma updated successfully!");
+        } else {
+          // Create new proforma
+          const result = await createProforma(proformaData).unwrap();
+          savedProforma = result?.data?.clinical_proforma;
+          toast.success("Clinical proforma created successfully!");
+          // Refetch proformas to get the new one
+          refetch();
+        }
       } catch (err) {
-        toast.error(err?.data?.message || "Failed to update clinical proforma");
+        console.error('Proforma save error:', err);
+        const errorMessage = err?.data?.message || err?.message || "Failed to save clinical proforma";
+        toast.error(errorMessage);
         return; // Stop further API calls
       }
 
@@ -896,10 +959,8 @@ console.log("existingPrescriptionData", existingPrescriptionData);
             const fileRecord = patientFilesData?.data;
             await updatePatientFiles({
               patient_id: patientId,
-              record_id: fileRecord?.id,
-              files_to_add: selectedFiles,
-              files_to_remove: filesToRemove,
-              user_id: currentUser?.id
+              files: selectedFiles,
+              files_to_remove: filesToRemove
             }).unwrap();
             
             if (selectedFiles.length > 0) {
@@ -946,18 +1007,21 @@ console.log("existingPrescriptionData", existingPrescriptionData);
       // }
 
 
-      if (formData.doctor_decision === "complex_case") {
+      // Use savedProforma.id if we just created one, otherwise use proforma.id
+      const proformaId = savedProforma?.id || proforma?.id;
 
+      if (formData.doctor_decision === "complex_case") {
         // Only call API if ADL does NOT exist
-        if (!existingAdlFile && patient.id && proforma.id) {
+        if (!existingAdlFile && patient?.id && proformaId) {
           try {
             await createADLFile({
               patient_id: patient.id,
-              clinical_proforma_id: proforma.id,
+              clinical_proforma_id: proformaId,
             }).unwrap();
       
             toast.success("ADL file created");
           } catch (err) {
+            console.error('ADL creation error:', err);
             toast.error(err?.data?.message || "Failed to create ADL file");
           }
         }
@@ -967,20 +1031,23 @@ console.log("existingPrescriptionData", existingPrescriptionData);
       // ======================================
       // TRY–CATCH #4: Create Bulk Prescriptions
       // ======================================
-      if (!existingPrescription && patient.id && proforma.id) {
+      if (!existingPrescription && patient?.id && proformaId) {
         try {
           await createPrescriptions({
             patient_id: patient.id,
-            clinical_proforma_id: proforma.id,
+            clinical_proforma_id: proformaId,
           }).unwrap();
           toast.success("Prescriptions updated");
         } catch (err) {
+          console.error('Prescription creation error:', err);
           toast.error(err?.data?.message || "Failed to create prescriptions");
         }
       }
 
     } catch (err) {
-      toast.error("Unexpected error occurred");
+      console.error('Unexpected error in handleSubmitClinicalProforma:', err);
+      const errorMessage = err?.data?.message || err?.message || "Unexpected error occurred";
+      toast.error(errorMessage);
     }
   };
 
@@ -1420,12 +1487,12 @@ console.log("existingPrescriptionData", existingPrescriptionData);
                         options={DOCTOR_DECISION}
                         required
                         disabled={isAlreadyComplex}
-                        title={isAlreadyComplex ? "Cannot change from Complex Case to Simple Case" : ""}
+                        title={isAlreadyComplex ? "Cannot change from Instantly Requires Detailed Work-Up to Requires Detailed Workup on Next Follow-Up" : ""}
                       />
                       {isAlreadyComplex && (
                         <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
                           <FiAlertCircle className="w-3 h-3" />
-                          This case is already marked as Complex and cannot be changed back to Simple.
+                          This case is already marked as Instantly Requires Detailed Work-Up and cannot be changed back to Requires Detailed Workup on Next Follow-Up.
                         </p>
                       )}
                     </div>
@@ -1503,9 +1570,9 @@ console.log("existingPrescriptionData", existingPrescriptionData);
                   className="bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30"
                 >
                   <FiSave className="w-4 h-4" />
-                  {isUpdating || isUploadingFiles
-                    ? 'Updating...'
-                    : isUpdateMode
+                  {(isUpdating || isCreating || isUploadingFiles)
+                    ? 'Saving...'
+                    : isUpdateMode || proforma?.id
                       ? 'Update Walk-in Clinical Proforma'
                       : 'Create Walk-in Clinical Proforma'}
                 </Button>

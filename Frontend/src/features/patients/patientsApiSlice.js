@@ -106,7 +106,14 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
           });
         }
       },
-      invalidatesTags: (result, error, { id }) => [{ type: 'Patient', id }, 'Patient'],
+      invalidatesTags: (result, error, { id, files, files_to_remove }) => {
+        const tags = [{ type: 'Patient', id }, 'Patient'];
+        // If files were uploaded or removed, also invalidate PatientFile cache
+        if ((files && files.length > 0) || (files_to_remove && files_to_remove.length > 0)) {
+          tags.push({ type: 'PatientFile', id }, { type: 'PatientFile', id: 'LIST' });
+        }
+        return tags;
+      },
     }),
     deletePatient: builder.mutation({
       query: (id) => ({

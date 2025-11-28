@@ -14,6 +14,7 @@ import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatDate } from '../../utils/formatters';
+import { getDoctorDecisionLabel } from '../../utils/enumMappings';
 
 const ClinicalProformaPage = () => {
   const [page, setPage] = useState(1);
@@ -74,7 +75,7 @@ const ClinicalProformaPage = () => {
       header: 'Decision',
       render: (row) => (
         <Badge variant={row.doctor_decision === 'complex_case' ? 'warning' : 'success'}>
-          {row.doctor_decision === 'complex_case' ? 'Complex' : 'Simple'}
+          {getDoctorDecisionLabel(row.doctor_decision) || 'N/A'}
         </Badge>
       ),
     },

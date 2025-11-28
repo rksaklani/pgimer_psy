@@ -1024,7 +1024,7 @@ const Dashboard = () => {
                       key={proforma.id || idx}
                       icon={FiFileText}
                       title={`Clinical Proforma: ${proforma.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up'}`}
-                      description={`Patient: ${proforma.patient_name || 'N/A'} - ${proforma.doctor_decision === 'complex_case' ? 'Complex Case' : 'Simple Case'}`}
+                      description={`Patient: ${proforma.patient_name || 'N/A'} - ${proforma.doctor_decision === 'complex_case' ? 'Instantly Requires Detailed Work-Up' : 'Requires Detailed Workup on Next Follow-Up'}`}
                       time={proforma.created_at ? formatDateTime(proforma.created_at) : 'N/A'}
                       status={proforma.doctor_decision === 'complex_case' ? 'complex' : 'simple'}
                       color="from-green-500 to-green-600"

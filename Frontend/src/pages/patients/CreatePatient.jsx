@@ -448,7 +448,7 @@ const CreatePatient = () => {
         contact_number: formData.contact_number || null,
 
         // Quick Entry fields
-        department: "Psychiatry" || null,
+        department: "Psychiatry",
         unit_consit: formData.unit_consit || null,
         room_no: formData.room_no || null,
         serial_no: formData.serial_no || null,
@@ -473,11 +473,17 @@ const CreatePatient = () => {
         permanent_country: formData.permanent_country || null,
         
         // Present Address fields
+        present_address_line_1: formData.present_address_line_1 || null,
         present_address_line_2: formData.present_address_line_2 || null,
+        present_city_town_village: formData.present_city_town_village || null,
         present_city_town_village_2: formData.present_city_town_village_2 || null,
+        present_district: formData.present_district || null,
         present_district_2: formData.present_district_2 || null,
+        present_state: formData.present_state || null,
         present_state_2: formData.present_state_2 || null,
+        present_pin_code: formData.present_pin_code || null,
         present_pin_code_2: formData.present_pin_code_2 || null,
+        present_country: formData.present_country || null,
         present_country_2: formData.present_country_2 || null,
         
         // Local Address field
@@ -620,11 +626,17 @@ const CreatePatient = () => {
         permanent_country: formData.permanent_country || null,
         
         // Present Address fields
+        present_address_line_1: formData.present_address_line_1 || null,
         present_address_line_2: formData.present_address_line_2 || null,
+        present_city_town_village: formData.present_city_town_village || null,
         present_city_town_village_2: formData.present_city_town_village_2 || null,
+        present_district: formData.present_district || null,
         present_district_2: formData.present_district_2 || null,
+        present_state: formData.present_state || null,
         present_state_2: formData.present_state_2 || null,
+        present_pin_code: formData.present_pin_code || null,
         present_pin_code_2: formData.present_pin_code_2 || null,
+        present_country: formData.present_country || null,
         present_country_2: formData.present_country_2 || null,
         
         // Local Address field
@@ -1693,6 +1705,71 @@ const CreatePatient = () => {
                             patientId={patientId}
                             disabled={!patientId}
                           />
+                          
+                          {/* File Preview - Show uploaded files */}
+                          {selectedFiles && selectedFiles.length > 0 && (
+                            <div className="mt-6">
+                              <h5 className="text-lg font-semibold text-gray-800 mb-4">Uploaded Files Preview</h5>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {selectedFiles.map((file, index) => {
+                                  const fileUrl = file instanceof File 
+                                    ? URL.createObjectURL(file) 
+                                    : file;
+                                  const fileName = file instanceof File ? file.name : file.split('/').pop();
+                                  const fileType = fileName.split('.').pop()?.toLowerCase();
+                                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileType);
+                                  
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="relative group bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200"
+                                    >
+                                      {/* Remove Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+                                        }}
+                                        className="absolute top-2 right-2 z-10 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                      >
+                                        <FiX className="w-4 h-4" />
+                                      </button>
+                                      
+                                      {/* Image Preview */}
+                                      {isImage && file instanceof File ? (
+                                        <div className="aspect-square relative bg-gray-100">
+                                          <img
+                                            src={fileUrl}
+                                            alt={fileName}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              e.target.style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="aspect-square flex items-center justify-center bg-gray-100">
+                                          <FiFileText className="w-12 h-12 text-gray-400" />
+                                        </div>
+                                      )}
+                                      
+                                      {/* File Name */}
+                                      <div className="p-2">
+                                        <p className="text-xs font-medium text-gray-800 truncate" title={fileName}>
+                                          {fileName}
+                                        </p>
+                                        {file instanceof File && (
+                                          <p className="text-xs text-gray-500">
+                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                             <div className="flex flex-col sm:flex-row justify-end gap-4">

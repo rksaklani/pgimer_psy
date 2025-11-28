@@ -13,10 +13,18 @@ export const IconInput = ({
   const normalizedValue = props.value === null || props.value === undefined ? '' : props.value;
   const normalizedDefaultValue = defaultValue === null || defaultValue === undefined ? '' : defaultValue;
   
-  // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
-  const inputProps = normalizedValue !== undefined && normalizedValue !== '' 
-    ? { ...props, value: normalizedValue } 
-    : { ...props, value: normalizedValue, defaultValue: normalizedDefaultValue };
+  // Determine if this should be a controlled or uncontrolled component
+  // If 'value' prop is provided (even if empty string), it's controlled - don't use defaultValue
+  // If 'value' is not provided, it's uncontrolled - use defaultValue
+  const isControlled = 'value' in props;
+  
+  // Remove defaultValue from props if it exists (to avoid conflicts)
+  const { defaultValue: _, ...restProps } = props;
+  
+  // Build input props - only include value OR defaultValue, never both
+  const inputProps = isControlled
+    ? { ...restProps, value: normalizedValue } // Controlled: use value, exclude defaultValue
+    : { ...restProps, defaultValue: normalizedDefaultValue }; // Uncontrolled: use defaultValue, exclude value
   
   return (
     <div className="space-y-2">

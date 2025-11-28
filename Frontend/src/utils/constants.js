@@ -69,8 +69,8 @@ export const CASE_SEVERITY = [
 ];
 
 export const DOCTOR_DECISION = [
-  { value: 'simple_case', label: 'Simple Case' },
-  { value: 'complex_case', label: 'Complex Case' },
+  { value: 'simple_case', label: 'Requires Detailed Workup on Next Follow-Up' },
+  { value: 'complex_case', label: 'Instantly Requires Detailed Work-Up' },
 ];
 
 export const FILE_STATUS = [

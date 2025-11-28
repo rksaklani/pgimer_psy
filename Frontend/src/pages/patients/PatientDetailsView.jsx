@@ -22,6 +22,7 @@ import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApi
 import ViewADL from '../adl/ViewADL';
 import ClinicalProformaDetails from '../clinical/ClinicalProformaDetails';
 import PrescriptionView from '../PrescribeMedication/PrescriptionView';
+import FilePreview from '../../components/FilePreview';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { useSelector } from 'react-redux';
 import PGI_Logo from '../../assets/PGI_Logo.png';
@@ -36,10 +37,19 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
   const returnTab = searchParams.get('returnTab');
   
   // Fetch patient files for preview
-  const { data: patientFilesData } = useGetPatientFilesQuery(patient?.id, {
-    skip: !patient?.id
+  const { data: patientFilesData, refetch: refetchFiles } = useGetPatientFilesQuery(patient?.id, {
+    skip: !patient?.id,
+    refetchOnMountOrArgChange: true
   });
   const existingFiles = patientFilesData?.data?.files || [];
+  
+  // Debug: Log files data
+  useEffect(() => {
+    if (patientFilesData) {
+      console.log('[PatientDetailsView] Patient files data:', patientFilesData);
+      console.log('[PatientDetailsView] Existing files:', existingFiles);
+    }
+  }, [patientFilesData, existingFiles]);
 
   // Merge patient and formData to ensure all fields are available with proper fallbacks
   // This ensures data is available immediately even if formData hasn't loaded yet
@@ -106,7 +116,8 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     patient: true,
     clinical: false,
     adl: false,
-    prescriptions: false
+    prescriptions: false,
+    files: false
   });
 
 
@@ -1873,7 +1884,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
           'Doctor Role': proforma.doctor_role || 'N/A',
           'Case Severity': getCaseSeverityLabel(proforma.case_severity) || 'N/A',
           'Decision': proforma.decision || 'N/A',
-          'Doctor Decision': proforma.doctor_decision === 'complex_case' ? 'Complex Case' : (proforma.doctor_decision === 'simple_case' ? 'Simple Case' : 'N/A'),
+          'Doctor Decision': proforma.doctor_decision === 'complex_case' ? 'Instantly Requires Detailed Work-Up' : (proforma.doctor_decision === 'simple_case' ? 'Requires Detailed Workup on Next Follow-Up' : 'N/A'),
           'Requires ADL File': proforma.requires_adl_file ? 'Yes' : 'No',
           'Informant Present': proforma.informant_present ? 'Yes' : 'No',
           'Diagnosis': proforma.diagnosis || 'N/A',
@@ -2946,23 +2957,58 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
       )}
 
       {/* Patient Documents & Files Preview Section */}
-      {/* {patient?.id && existingFiles && existingFiles.length > 0 && (
-        <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-          <div className="p-6">
-            <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
-                <FiFileText className="w-5 h-5 text-purple-600" />
+      {patient?.id && (
+        <Card className="shadow-lg border-0 bg-white">
+          <div
+            className="flex items-center justify-between p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <div 
+              className="flex items-center gap-4 cursor-pointer flex-1"
+              onClick={() => toggleCard('files')}
+            >
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FiFileText className="h-6 w-6 text-purple-600" />
               </div>
-              Patient Documents & Files
-            </h4>
-            <FilePreview
-              files={existingFiles}
-              canDelete={false}
-              baseUrl={import.meta.env.VITE_API_URL || 'http://localhost:2025/api'}
-            />
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Patient Documents & Files</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {existingFiles && existingFiles.length > 0
+                    ? `${existingFiles.length} file${existingFiles.length > 1 ? 's' : ''} uploaded`
+                    : 'No files uploaded'}
+                </p>
+              </div>
+            </div>
+            <div 
+              className="cursor-pointer"
+              onClick={() => toggleCard('files')}
+            >
+              {expandedCards.files ? (
+                <FiChevronUp className="h-6 w-6 text-gray-500" />
+              ) : (
+                <FiChevronDown className="h-6 w-6 text-gray-500" />
+              )}
+            </div>
           </div>
+
+          {expandedCards.files && (
+            <div className="p-6">
+              {existingFiles && existingFiles.length > 0 ? (
+                <FilePreview
+                  files={existingFiles}
+                  canDelete={false}
+                  baseUrl={import.meta.env.VITE_API_URL || 'http://localhost:2025/api'}
+                />
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <FiFileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No files uploaded</p>
+                  <p className="text-sm text-gray-400 mt-1">Files will appear here once uploaded</p>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
-      )} */}
+      )}
 
 {isResident || isFaculty || isJrSrUser || isAdminUser &&<div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
 
