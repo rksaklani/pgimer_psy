@@ -51,11 +51,15 @@ export const patientFilesApiSlice = apiSlice.injectEndpoints({
           return { error: { status: 'FETCH_ERROR', error: error.message } };
         }
       },
-      invalidatesTags: (result, error, { patient_id }) => [
-        { type: 'PatientFile', id: patient_id },
-        { type: 'PatientFile', id: 'LIST' },
-        { type: 'Patient', id: patient_id }
-      ],
+      invalidatesTags: (result, error, { patient_id }) => {
+        const tags = [
+          { type: 'PatientFile', id: patient_id },
+          { type: 'PatientFile', id: 'LIST' },
+          { type: 'Patient', id: patient_id }
+        ];
+        console.log('[patientFilesApiSlice] Invalidating tags after update:', tags);
+        return tags;
+      },
     }),
 
     // Update patient files (add/remove)
@@ -100,11 +104,15 @@ export const patientFilesApiSlice = apiSlice.injectEndpoints({
           return { error: { status: 'FETCH_ERROR', error: error.message } };
         }
       },
-      invalidatesTags: (result, error, { patient_id }) => [
-        { type: 'PatientFile', id: patient_id },
-        { type: 'PatientFile', id: 'LIST' },
-        { type: 'Patient', id: patient_id }
-      ],
+      invalidatesTags: (result, error, { patient_id }) => {
+        const tags = [
+          { type: 'PatientFile', id: patient_id },
+          { type: 'PatientFile', id: 'LIST' },
+          { type: 'Patient', id: patient_id }
+        ];
+        console.log('[patientFilesApiSlice] Invalidating tags after update:', tags);
+        return tags;
+      },
     }),
 
     // Delete a specific file
@@ -113,11 +121,15 @@ export const patientFilesApiSlice = apiSlice.injectEndpoints({
         url: `/patient-files/delete/${patient_id}/${encodeURIComponent(file_path)}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { patient_id }) => [
-        { type: 'PatientFile', id: patient_id },
-        { type: 'PatientFile', id: 'LIST' },
-        { type: 'Patient', id: patient_id }
-      ],
+      invalidatesTags: (result, error, { patient_id }) => {
+        const tags = [
+          { type: 'PatientFile', id: patient_id },
+          { type: 'PatientFile', id: 'LIST' },
+          { type: 'Patient', id: patient_id }
+        ];
+        console.log('[patientFilesApiSlice] Invalidating tags after update:', tags);
+        return tags;
+      },
     }),
 
     // Get file upload statistics

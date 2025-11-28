@@ -1997,9 +1997,10 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
         // Refetch files after update with a small delay to ensure backend processing is complete
         setTimeout(() => {
           if (refetchFiles) {
+            console.log('[PatientDetailsEdit] Refetching files after update...');
             refetchFiles();
           }
-        }, 500);
+        }, 1000);
       } else {
         // Update patient without files using JSON
         await updatePatient({

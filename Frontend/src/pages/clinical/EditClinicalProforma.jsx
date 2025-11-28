@@ -385,7 +385,8 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filesToRemove, setFilesToRemove] = useState([]);
   const { data: patientFilesData, refetch: refetchFiles } = useGetPatientFilesQuery(patientId, {
-    skip: !patientId
+    skip: !patientId,
+    refetchOnMountOrArgChange: true
   });
   const [updatePatientFiles, { isLoading: isUploadingFiles }] = useUpdatePatientFilesMutation();
   const [createPatientFiles] = useCreatePatientFilesMutation();
@@ -393,6 +394,18 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   // Get existing files from API
   const existingFiles = patientFilesData?.data?.files || [];
   const canEditFiles = patientFilesData?.data?.can_edit !== false;
+  
+  // Debug: Log files data
+  useEffect(() => {
+    if (patientFilesData) {
+      console.log('[EditClinicalProforma] Patient files data:', patientFilesData);
+      console.log('[EditClinicalProforma] Existing files:', existingFiles);
+      console.log('[EditClinicalProforma] Files count:', existingFiles.length);
+      if (existingFiles.length > 0) {
+        console.log('[EditClinicalProforma] First file path:', existingFiles[0]);
+      }
+    }
+  }, [patientFilesData, existingFiles]);
 
   // Card expand/collapse state
   const [expandedCards, setExpandedCards] = useState({
@@ -972,7 +985,13 @@ console.log("existingPrescriptionData", existingPrescriptionData);
             
             setSelectedFiles([]);
             setFilesToRemove([]);
-            refetchFiles();
+            // Refetch files after update with delay to ensure backend processing is complete
+            setTimeout(() => {
+              if (refetchFiles) {
+                console.log('[EditClinicalProforma] Refetching files after update...');
+                refetchFiles();
+              }
+            }, 1000);
           } else if (selectedFiles.length > 0) {
             // Create new record
             await createPatientFiles({
@@ -983,7 +1002,13 @@ console.log("existingPrescriptionData", existingPrescriptionData);
             
             toast.success(`${selectedFiles.length} file(s) uploaded successfully!`);
             setSelectedFiles([]);
-            refetchFiles();
+            // Refetch files after create with delay to ensure backend processing is complete
+            setTimeout(() => {
+              if (refetchFiles) {
+                console.log('[EditClinicalProforma] Refetching files after create...');
+                refetchFiles();
+              }
+            }, 1000);
           }
         } catch (fileErr) {
           console.error('File upload error:', fileErr);
@@ -1525,7 +1550,9 @@ console.log("existingPrescriptionData", existingPrescriptionData);
                   {/* Existing Files Preview */}
                   {existingFiles && existingFiles.length > 0 && (
                     <div className="mt-6">
-                      <h5 className="text-lg font-semibold text-gray-800 mb-4">Existing Files</h5>
+                      <h5 className="text-lg font-semibold text-gray-800 mb-4">
+                        Existing Files ({existingFiles.filter(file => !filesToRemove.includes(file)).length})
+                      </h5>
                       <FilePreview
                         files={existingFiles.filter(file => !filesToRemove.includes(file))}
                         onDelete={canEditFiles ? (filePath) => {
@@ -1539,6 +1566,11 @@ console.log("existingPrescriptionData", existingPrescriptionData);
                         canDelete={canEditFiles}
                         baseUrl={import.meta.env.VITE_API_URL || 'http://localhost:2025/api'}
                       />
+                    </div>
+                  )}
+                  {existingFiles && existingFiles.length === 0 && (
+                    <div className="mt-6 text-center py-4 text-gray-500">
+                      <p>No files uploaded yet</p>
                     </div>
                   )}
 

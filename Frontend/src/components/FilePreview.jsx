@@ -19,29 +19,72 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
       return filePath;
     }
     
-    // If it starts with /uploads, construct URL correctly
-    // Static files are served from /uploads, not /api/uploads
+    // Get base URL and remove /api if present
+    const apiUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:2025/api';
+    const baseUrlWithoutApi = apiUrl.replace(/\/api$/, ''); // Remove /api if present
+    
+    // Handle absolute file system paths (e.g., /var/www/pgimer_psy/Backend/uploads/...)
+    // Extract the relative path from the absolute path
+    if (filePath.startsWith('/var/') || filePath.startsWith('/usr/') || filePath.startsWith('/home/') || filePath.includes('/Backend/uploads/')) {
+      // Extract the path after /Backend/uploads/ or /uploads/
+      let relativePath = filePath;
+      
+      // Try to extract relative path from absolute path
+      const uploadsIndex = filePath.indexOf('/uploads/');
+      if (uploadsIndex !== -1) {
+        relativePath = filePath.substring(uploadsIndex);
+      } else {
+        // If it contains Backend/uploads, extract from there
+        const backendUploadsIndex = filePath.indexOf('/Backend/uploads/');
+        if (backendUploadsIndex !== -1) {
+          relativePath = filePath.substring(backendUploadsIndex + '/Backend'.length);
+        } else {
+          // Fallback: try to find uploads directory
+          const lastUploadsIndex = filePath.lastIndexOf('/uploads/');
+          if (lastUploadsIndex !== -1) {
+            relativePath = filePath.substring(lastUploadsIndex);
+          }
+        }
+      }
+      
+      const fullUrl = `${baseUrlWithoutApi}${relativePath}`;
+      console.log('[FilePreview] Converted absolute path to URL:', {
+        original: filePath,
+        relative: relativePath,
+        fullUrl: fullUrl
+      });
+      return fullUrl;
+    }
+    
+    // If it starts with /uploads, use it directly (backend serves from /uploads)
     if (filePath.startsWith('/uploads/')) {
-      // Extract base URL without /api
-      const apiUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:2025/api';
-      const baseUrlWithoutApi = apiUrl.replace(/\/api$/, ''); // Remove /api if present
       const fullUrl = `${baseUrlWithoutApi}${filePath}`;
-      console.log('[FilePreview] Constructed URL:', fullUrl, 'from path:', filePath);
+      console.log('[FilePreview] Constructed URL from /uploads path:', fullUrl, 'from path:', filePath);
       return fullUrl;
     }
     
     // If it's a relative path starting with uploads (no leading slash)
     if (filePath.startsWith('uploads/')) {
-      const apiUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:2025/api';
-      const baseUrlWithoutApi = apiUrl.replace(/\/api$/, '');
       const fullUrl = `${baseUrlWithoutApi}/${filePath}`;
-      console.log('[FilePreview] Constructed URL (no leading slash):', fullUrl, 'from path:', filePath);
+      console.log('[FilePreview] Constructed URL from uploads/ path:', fullUrl, 'from path:', filePath);
+      return fullUrl;
+    }
+    
+    // If it starts with /, it might be a path like /patient_files/...
+    if (filePath.startsWith('/')) {
+      // Check if it's a patient_files path that needs /uploads prefix
+      if (filePath.startsWith('/patient_files/') || filePath.startsWith('/patients/')) {
+        const fullUrl = `${baseUrlWithoutApi}${filePath}`;
+        console.log('[FilePreview] Constructed URL from /patient_files path:', fullUrl, 'from path:', filePath);
+        return fullUrl;
+      }
+      // Otherwise, prepend /uploads
+      const fullUrl = `${baseUrlWithoutApi}/uploads${filePath}`;
+      console.log('[FilePreview] Constructed URL from / path:', fullUrl, 'from path:', filePath);
       return fullUrl;
     }
     
     // Otherwise assume it's a relative path and prepend /uploads
-    const apiUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:2025/api';
-    const baseUrlWithoutApi = apiUrl.replace(/\/api$/, '');
     const fullUrl = `${baseUrlWithoutApi}/uploads/${filePath}`;
     console.log('[FilePreview] Constructed URL (relative):', fullUrl, 'from path:', filePath);
     return fullUrl;
@@ -116,26 +159,61 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {files.map((filePath, index) => {
-          const fileType = getFileType(filePath);
-          const fileName = filePath.split('/').pop();
-          const fileUrl = getFileUrl(filePath);
+        {files
+          .map((filePath, index) => {
+            // Handle both string paths and object with path property
+            const actualPath = typeof filePath === 'string' ? filePath : (filePath?.path || filePath?.url || filePath);
+            if (!actualPath) {
+              console.warn('[FilePreview] Invalid file path at index', index, ':', filePath);
+              return null;
+            }
+            
+            const fileType = getFileType(actualPath);
+            const fileName = actualPath.split('/').pop();
+            const fileUrl = getFileUrl(actualPath);
+            
+            console.log('[FilePreview] Rendering file:', {
+              index,
+              original: filePath,
+              actualPath,
+              fileName,
+              fileUrl,
+              fileType
+            });
 
-          return (
+            return {
+              actualPath,
+              fileType,
+              fileName,
+              fileUrl,
+              index
+            };
+          })
+          .filter(Boolean)
+          .map(({ actualPath, fileType, fileName, fileUrl, index }) => (
             <div
-              key={index}
+              key={`${actualPath}-${index}`}
               className="relative group bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer"
-              onClick={() => openPreview(filePath)}
+              onClick={() => openPreview(actualPath)}
             >
               {/* Image Preview */}
               {fileType === 'image' ? (
                 <div className="aspect-square relative bg-gray-100">
                   <img
-                    src={fileUrl}
-                    alt={fileName}
+                    src={fileUrl || ''}
+                    alt={fileName || 'Image'}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                     onError={(e) => {
-                      console.error('[FilePreview] Failed to load image:', fileUrl, 'Original path:', filePath);
+                      const attemptedUrl = e.target?.src || fileUrl || 'unknown';
+                      const errorInfo = {
+                        fileUrl: String(fileUrl || ''),
+                        originalPath: String(actualPath || ''),
+                        fileName: String(fileName || ''),
+                        baseUrl: String(baseUrl || import.meta.env.VITE_API_URL || ''),
+                        attemptedUrl: String(attemptedUrl)
+                      };
+                      console.error('[FilePreview] Failed to load image:', errorInfo);
                       // Hide broken image and show error indicator
                       e.target.style.display = 'none';
                       const parent = e.target.parentElement;
@@ -147,9 +225,13 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                           </svg>
                           <p class="text-xs text-center">Image not found</p>
+                          <p class="text-xs text-center text-gray-400 mt-1 truncate w-full px-2" title="${String(fileUrl || attemptedUrl).replace(/"/g, '&quot;').replace(/'/g, '&#39;')}">${String(fileUrl || attemptedUrl).substring(0, 50)}${String(fileUrl || attemptedUrl).length > 50 ? '...' : ''}</p>
                         `;
                         parent.appendChild(errorDiv);
                       }
+                    }}
+                    onLoad={() => {
+                      console.log('[FilePreview] Image loaded successfully:', String(fileUrl || ''));
                     }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -178,7 +260,7 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
               {/* Action Buttons */}
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={(e) => downloadFile(filePath, e)}
+                  onClick={(e) => downloadFile(actualPath, e)}
                   className="p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                   title="Download"
                 >
@@ -186,7 +268,7 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
                 </button>
                 {canDelete && onDelete && (
                   <button
-                    onClick={(e) => handleDelete(filePath, e)}
+                    onClick={(e) => handleDelete(actualPath, e)}
                     className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                     title="Delete"
                   >
@@ -195,8 +277,7 @@ const FilePreview = ({ files = [], onDelete, canDelete = true, baseUrl = '' }) =
                 )}
               </div>
             </div>
-          );
-        })}
+          ))}
       </div>
 
       {/* Preview Modal */}
