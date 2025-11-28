@@ -81,7 +81,10 @@ const PatientRow = ({ patient, isNewPatient, navigate, onMarkCompleted }) => {
   const hasExistingProforma = proformas.length > 0;
   const latestProformaId = hasExistingProforma ? proformas[0].id : null;
   
-  // Check if patient has a proforma created today (reuse todayDateString from above)
+  // Get today's date string in IST
+  const todayDateString = toISTDateString(new Date());
+  
+  // Check if patient has a proforma created today
   const hasProformaToday = proformas.some(proforma => {
     const proformaDate = toISTDateString(proforma.created_at || proforma.visit_date || proforma.date);
     return proformaDate === todayDateString;
