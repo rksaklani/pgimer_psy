@@ -31,6 +31,7 @@ import PrescriptionEdit from '../PrescribeMedication/PrescriptionEdit';
 
 import { SelectWithOther } from '../../components/SelectWithOther';
 import {IconInput} from '../../components/IconInput';
+import PGI_Logo from '../../assets/PGI_Logo.png';
 
 const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
   const [currentDoctorDecision, setCurrentDoctorDecision] = useState(null);
@@ -88,8 +89,22 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   const adlPrintRef = useRef(null);
   const prescriptionPrintRef = useRef(null);
   
-  const handlePrintPatientDetails = () => {
+  const handlePrintPatientDetails = async () => {
     if (!patientDetailsPrintRef.current) return;
+
+    // Convert logo to base64 for embedding in print
+    let logoBase64 = '';
+    try {
+      const logoResponse = await fetch(PGI_Logo);
+      const logoBlob = await logoResponse.blob();
+      const logoReader = new FileReader();
+      logoBase64 = await new Promise((resolve) => {
+        logoReader.onloadend = () => resolve(logoReader.result);
+        logoReader.readAsDataURL(logoBlob);
+      });
+    } catch (e) {
+      console.warn('Could not load logo for print:', e);
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -98,7 +113,31 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     }
 
     const sectionElement = patientDetailsPrintRef.current;
-    const sectionHTML = sectionElement.innerHTML;
+    let sectionHTML = sectionElement.innerHTML;
+    
+    // Clean up empty elements from HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = sectionHTML;
+    
+    // Remove empty elements (but keep inputs, textareas, selects, images, br, hr)
+    const emptyElements = tempDiv.querySelectorAll(':empty');
+    emptyElements.forEach(el => {
+      const tagName = el.tagName?.toLowerCase();
+      if (!['input', 'textarea', 'select', 'img', 'br', 'hr', 'option'].includes(tagName)) {
+        // Check if it's an input/textarea/select with no value
+        if (tagName === 'input' && (!el.value || el.value.trim() === '')) {
+          el.remove();
+        } else if (tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select') {
+          el.remove();
+        }
+      }
+    });
+    
+    // Remove empty containers
+    const emptyContainers = tempDiv.querySelectorAll('div:empty, span:empty, p:empty');
+    emptyContainers.forEach(el => el.remove());
+    
+    sectionHTML = tempDiv.innerHTML;
 
     const printContent = `
 <!DOCTYPE html>
@@ -116,6 +155,20 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       print-color-adjust: exact;
       box-sizing: border-box;
     }
+    /* Hide empty elements */
+    :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+      display: none !important;
+    }
+    /* Hide empty form fields */
+    input[value=""], input:not([value]),
+    textarea:empty,
+    select:not([value]):not([value=""]) {
+      display: none !important;
+    }
+    /* Hide empty containers */
+    div:empty, span:empty, p:empty {
+      display: none !important;
+    }
     body {
       font-family: 'Arial', 'Helvetica', sans-serif;
       font-size: 10pt;
@@ -126,26 +179,47 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       background: #fff;
     }
     .header {
-      text-align: center;
-      border-bottom: 4px solid #2563eb;
-      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 4px solid #1e40af;
       margin-bottom: 25px;
       background: linear-gradient(to bottom, #f8fafc, #ffffff);
-      padding-top: 10px;
     }
-    .header h1 {
+    .logo-container {
+      flex-shrink: 0;
+    }
+    .logo-container img {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+    }
+    .header-text {
+      text-align: center;
+      flex: 1;
+    }
+    .header-text h1 {
       margin: 0;
-      font-size: 16pt;
+      font-size: 20pt;
       font-weight: bold;
       color: #1e40af;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      line-height: 1.2;
     }
-    .header h2 {
+    .header-text h2 {
       margin: 6px 0 0 0;
-      font-size: 12pt;
+      font-size: 14pt;
       color: #475569;
       font-weight: 600;
+    }
+    .header-text .subtitle {
+      margin: 4px 0 0 0;
+      font-size: 11pt;
+      color: #64748b;
+      font-weight: 500;
     }
     .content {
       padding: 0;
@@ -154,67 +228,103 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       margin-bottom: 20px;
       page-break-inside: avoid;
     }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .section:last-of-type {
+      margin-bottom: 0;
+    }
     .section-title {
-      font-size: 12pt;
+      font-size: 13pt;
       font-weight: bold;
       color: #1e40af;
-      margin: 20px 0 12px 0;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #e2e8f0;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .field-group {
+      border-bottom: 3px solid #3b82f6;
+      padding-bottom: 8px;
       margin-bottom: 15px;
-      padding: 8px;
-      background: #f8fafc;
-      border-left: 3px solid #3b82f6;
-      border-radius: 4px;
-    }
-    .field-label {
-      font-weight: 600;
-      color: #475569;
-      font-size: 9pt;
-      margin-bottom: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.8px;
+      background: linear-gradient(to right, #eff6ff, #ffffff);
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 8px;
+      margin-left: -15px;
+      margin-right: -15px;
+      margin-top: -15px;
+      border-radius: 6px 6px 0 0;
     }
-    .field-value {
-      color: #1e293b;
-      font-size: 10pt;
-      font-weight: 500;
-      padding-left: 8px;
+    /* Field Grid Layout - Print Optimized */
+    .info-grid, [class*="grid"], .grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 10px !important;
+      margin-bottom: 12px !important;
     }
+    .info-item, .field-group {
+      margin-bottom: 8px !important;
+      padding: 8px 10px !important;
+      background: #f8fafc !important;
+      border-left: 3px solid #3b82f6 !important;
+      border-radius: 4px !important;
+      break-inside: avoid !important;
+    }
+    .info-item.full-width, .field-group.full-width {
+      grid-column: 1 / -1 !important;
+    }
+    .field-label, .info-label {
+      font-weight: 600 !important;
+      color: #475569 !important;
+      font-size: 9pt !important;
+      margin-bottom: 4px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.3px !important;
+      display: block !important;
+    }
+    .field-value, .info-value {
+      color: #1e293b !important;
+      font-size: 10pt !important;
+      font-weight: 500 !important;
+      padding-left: 4px !important;
+      display: block !important;
+    }
+    /* Handle Tailwind grid classes in print */
+    [class*="grid-cols-1"] { grid-template-columns: 1fr !important; }
+    [class*="grid-cols-2"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [class*="grid-cols-3"] { grid-template-columns: repeat(3, 1fr) !important; }
+    [class*="grid-cols-4"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [class*="grid-cols-5"], [class*="grid-cols-6"] { grid-template-columns: repeat(2, 1fr) !important; }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin-top: 15px;
       font-size: 9pt;
-      page-break-inside: auto;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    table thead {
-      background: #1e40af;
-      color: #fff;
+    table th, table td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      text-align: left;
     }
     table th {
-      padding: 10px 8px;
-      text-align: left;
+      background: linear-gradient(to bottom, #1e40af, #2563eb);
+      color: #ffffff;
       font-weight: 600;
-      font-size: 9pt;
-      border: 1px solid #1e3a8a;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    table td {
-      padding: 8px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
+      letter-spacing: 0.5px;
+      font-size: 9pt;
     }
     table tbody tr {
-      page-break-inside: avoid;
+      background: #ffffff;
     }
     table tbody tr:nth-child(even) {
       background: #f8fafc;
+    }
+    table tbody tr:hover {
+      background: #eff6ff;
     }
     .badge {
       display: inline-block;
@@ -248,12 +358,80 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       body {
         margin: 0;
         padding: 0;
+        font-size: 9pt;
+      }
+      /* Hide empty elements in print */
+      :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+        display: none !important;
+      }
+      /* Hide empty form fields */
+      input[value=""], input:not([value]),
+      textarea:empty,
+      select:not([value]):not([value=""]) {
+        display: none !important;
+      }
+      /* Hide empty containers */
+      div:empty, span:empty, p:empty {
+        display: none !important;
+      }
+      /* Remove excessive spacing */
+      [class*="space-y"]:empty,
+      [class*="gap-"]:empty {
+        display: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      /* Force 2-column layout for all grids */
+      .grid, [class*="grid"], [class*="grid-cols"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+      }
+      /* Full width items */
+      [class*="col-span"], [class*="full-width"] {
+        grid-column: 1 / -1 !important;
       }
       .section {
         page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      /* Field containers - show values from inputs */
+      [class*="relative"]:has(label), [class*="relative"]:has([class*="font-semibold"]) {
+        display: block !important;
+        margin-bottom: 8px !important;
+        padding: 6px 8px !important;
+        background: #f8fafc !important;
+        border-left: 3px solid #3b82f6 !important;
+        border-radius: 3px !important;
+        page-break-inside: avoid !important;
+      }
+      /* Show input values */
+      input[type="text"], input[type="number"], input[type="date"],
+      select, textarea {
+        display: block !important;
+        font-size: 9pt !important;
+        color: #1e293b !important;
+        margin: 0 !important;
+        padding: 2px 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+      }
+      /* Remove decorative elements */
+      [class*="gradient"], [class*="blur"], [class*="shadow-xl"], 
+      [class*="backdrop-blur"], [class*="absolute"] {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        position: static !important;
       }
       table {
         page-break-inside: auto;
+        font-size: 8pt;
       }
       tr {
         page-break-inside: avoid;
@@ -270,15 +448,30 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 </head>
 <body>
   <div class="header">
-    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
-    <h2>Department of Psychiatry - Patient Details</h2>
+    ${logoBase64 ? `
+    <div class="logo-container">
+      <img src="${logoBase64}" alt="PGIMER Logo" />
+    </div>
+    ` : ''}
+    <div class="header-text">
+      <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+      <h2>Department of Psychiatry</h2>
+      <p class="subtitle">Patient Medical Record</p>
+    </div>
   </div>
   <div class="content">
     ${sectionHTML}
   </div>
   <div class="footer">
-    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
-    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+    <p><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}</p>
+    <p><strong>PGIMER - Department of Psychiatry</strong> | Electronic Medical Record System</p>
+    <p style="font-size: 8pt; margin-top: 8px; color: #94a3b8;">This is a computer-generated document. No signature required.</p>
   </div>
 </body>
 </html>
@@ -291,13 +484,27 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       setTimeout(() => {
         printWindow.print();
         toast.success('Print dialog opened');
-      }, 250);
+      }, 500);
     };
   };
 
   // Print functionality for ADL section
-  const handlePrintADL = () => {
+  const handlePrintADL = async () => {
     if (!adlPrintRef.current) return;
+
+    // Convert logo to base64 for embedding in print
+    let logoBase64 = '';
+    try {
+      const logoResponse = await fetch(PGI_Logo);
+      const logoBlob = await logoResponse.blob();
+      const logoReader = new FileReader();
+      logoBase64 = await new Promise((resolve) => {
+        logoReader.onloadend = () => resolve(logoReader.result);
+        logoReader.readAsDataURL(logoBlob);
+      });
+    } catch (e) {
+      console.warn('Could not load logo for print:', e);
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -324,6 +531,20 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       print-color-adjust: exact;
       box-sizing: border-box;
     }
+    /* Hide empty elements */
+    :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+      display: none !important;
+    }
+    /* Hide empty form fields */
+    input[value=""], input:not([value]),
+    textarea:empty,
+    select:not([value]):not([value=""]) {
+      display: none !important;
+    }
+    /* Hide empty containers */
+    div:empty, span:empty, p:empty {
+      display: none !important;
+    }
     body {
       font-family: 'Arial', 'Helvetica', sans-serif;
       font-size: 10pt;
@@ -334,26 +555,47 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       background: #fff;
     }
     .header {
-      text-align: center;
-      border-bottom: 4px solid #7c3aed;
-      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 4px solid #8b5cf6;
       margin-bottom: 25px;
       background: linear-gradient(to bottom, #faf5ff, #ffffff);
-      padding-top: 10px;
     }
-    .header h1 {
+    .logo-container {
+      flex-shrink: 0;
+    }
+    .logo-container img {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+    }
+    .header-text {
+      text-align: center;
+      flex: 1;
+    }
+    .header-text h1 {
       margin: 0;
-      font-size: 16pt;
+      font-size: 20pt;
       font-weight: bold;
       color: #6d28d9;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      line-height: 1.2;
     }
-    .header h2 {
+    .header-text h2 {
       margin: 6px 0 0 0;
-      font-size: 12pt;
+      font-size: 14pt;
       color: #475569;
       font-weight: 600;
+    }
+    .header-text .subtitle {
+      margin: 4px 0 0 0;
+      font-size: 11pt;
+      color: #64748b;
+      font-weight: 500;
     }
     .content {
       padding: 0;
@@ -362,21 +604,40 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       margin-bottom: 20px;
       page-break-inside: avoid;
     }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .section:last-of-type {
+      margin-bottom: 0;
+    }
     .section-title {
-      font-size: 12pt;
+      font-size: 13pt;
       font-weight: bold;
       color: #6d28d9;
-      margin: 20px 0 12px 0;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #e9d5ff;
+      border-bottom: 3px solid #8b5cf6;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.8px;
+      background: linear-gradient(to right, #f5f3ff, #ffffff);
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 8px;
+      margin-left: -15px;
+      margin-right: -15px;
+      margin-top: -15px;
+      border-radius: 6px 6px 0 0;
     }
     .field-group {
-      margin-bottom: 15px;
-      padding: 8px;
+      margin-bottom: 10px;
+      padding: 6px 8px;
       background: #faf5ff;
-      border-left: 3px solid #a78bfa;
+      border-left: 3px solid #8b5cf6;
       border-radius: 4px;
     }
     .field-label {
@@ -385,44 +646,42 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       font-size: 9pt;
       margin-bottom: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
     }
     .field-value {
       color: #1e293b;
       font-size: 10pt;
       font-weight: 500;
-      padding-left: 8px;
+      padding-left: 4px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin-top: 15px;
       font-size: 9pt;
-      page-break-inside: auto;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    table thead {
-      background: #6d28d9;
-      color: #fff;
+    table th, table td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      text-align: left;
     }
     table th {
-      padding: 10px 8px;
-      text-align: left;
+      background: linear-gradient(to bottom, #6d28d9, #7c3aed);
+      color: #ffffff;
       font-weight: 600;
-      font-size: 9pt;
-      border: 1px solid #5b21b6;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    table td {
-      padding: 8px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
+      letter-spacing: 0.5px;
+      font-size: 9pt;
     }
     table tbody tr {
-      page-break-inside: avoid;
+      background: #ffffff;
     }
     table tbody tr:nth-child(even) {
       background: #faf5ff;
+    }
+    table tbody tr:hover {
+      background: #f5f3ff;
     }
     .badge {
       display: inline-block;
@@ -433,13 +692,23 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       border: 1px solid;
     }
     .footer {
-      margin-top: 30px;
-      padding-top: 15px;
-      border-top: 2px solid #e2e8f0;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 3px solid #e2e8f0;
       text-align: center;
-      font-size: 8pt;
+      font-size: 9pt;
       color: #64748b;
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 6px;
       page-break-inside: avoid;
+    }
+    .footer p {
+      margin: 4px 0;
+    }
+    .footer strong {
+      color: #6d28d9;
+      font-weight: 600;
     }
     button, .no-print, [class*="no-print"] {
       display: none !important;
@@ -456,12 +725,80 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       body {
         margin: 0;
         padding: 0;
+        font-size: 9pt;
+      }
+      /* Hide empty elements in print */
+      :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+        display: none !important;
+      }
+      /* Hide empty form fields */
+      input[value=""], input:not([value]),
+      textarea:empty,
+      select:not([value]):not([value=""]) {
+        display: none !important;
+      }
+      /* Hide empty containers */
+      div:empty, span:empty, p:empty {
+        display: none !important;
+      }
+      /* Remove excessive spacing */
+      [class*="space-y"]:empty,
+      [class*="gap-"]:empty {
+        display: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      /* Force 2-column layout for all grids */
+      .grid, [class*="grid"], [class*="grid-cols"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+      }
+      /* Full width items */
+      [class*="col-span"], [class*="full-width"] {
+        grid-column: 1 / -1 !important;
       }
       .section {
         page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      /* Field containers - show values from inputs */
+      [class*="relative"]:has(label), [class*="relative"]:has([class*="font-semibold"]) {
+        display: block !important;
+        margin-bottom: 8px !important;
+        padding: 6px 8px !important;
+        background: #f8fafc !important;
+        border-left: 3px solid #3b82f6 !important;
+        border-radius: 3px !important;
+        page-break-inside: avoid !important;
+      }
+      /* Show input values */
+      input[type="text"], input[type="number"], input[type="date"],
+      select, textarea {
+        display: block !important;
+        font-size: 9pt !important;
+        color: #1e293b !important;
+        margin: 0 !important;
+        padding: 2px 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+      }
+      /* Remove decorative elements */
+      [class*="gradient"], [class*="blur"], [class*="shadow-xl"], 
+      [class*="backdrop-blur"], [class*="absolute"] {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        position: static !important;
       }
       table {
         page-break-inside: auto;
+        font-size: 8pt;
       }
       tr {
         page-break-inside: avoid;
@@ -478,15 +815,30 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 </head>
 <body>
   <div class="header">
-    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
-    <h2>Department of Psychiatry - Out-Patient Intake Record</h2>
+    ${logoBase64 ? `
+    <div class="logo-container">
+      <img src="${logoBase64}" alt="PGIMER Logo" />
+    </div>
+    ` : ''}
+    <div class="header-text">
+      <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+      <h2>Department of Psychiatry</h2>
+      <p class="subtitle">Out-Patient Intake Record</p>
+    </div>
   </div>
   <div class="content">
     ${sectionHTML}
   </div>
   <div class="footer">
-    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
-    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+    <p><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}</p>
+    <p><strong>PGIMER - Department of Psychiatry</strong> | Electronic Medical Record System</p>
+    <p style="font-size: 8pt; margin-top: 8px; color: #94a3b8;">This is a computer-generated document. No signature required.</p>
   </div>
 </body>
 </html>
@@ -499,13 +851,27 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       setTimeout(() => {
         printWindow.print();
         toast.success('Print dialog opened');
-      }, 250);
+      }, 500);
     };
   };
 
   // Print functionality for Prescription section
-  const handlePrintPrescription = () => {
+  const handlePrintPrescription = async () => {
     if (!prescriptionPrintRef.current) return;
+
+    // Convert logo to base64 for embedding in print
+    let logoBase64 = '';
+    try {
+      const logoResponse = await fetch(PGI_Logo);
+      const logoBlob = await logoResponse.blob();
+      const logoReader = new FileReader();
+      logoBase64 = await new Promise((resolve) => {
+        logoReader.onloadend = () => resolve(logoReader.result);
+        logoReader.readAsDataURL(logoBlob);
+      });
+    } catch (e) {
+      console.warn('Could not load logo for print:', e);
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -532,6 +898,20 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       print-color-adjust: exact;
       box-sizing: border-box;
     }
+    /* Hide empty elements */
+    :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+      display: none !important;
+    }
+    /* Hide empty form fields */
+    input[value=""], input:not([value]),
+    textarea:empty,
+    select:not([value]):not([value=""]) {
+      display: none !important;
+    }
+    /* Hide empty containers */
+    div:empty, span:empty, p:empty {
+      display: none !important;
+    }
     body {
       font-family: 'Arial', 'Helvetica', sans-serif;
       font-size: 10pt;
@@ -542,26 +922,47 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       background: #fff;
     }
     .header {
-      text-align: center;
-      border-bottom: 4px solid #d97706;
-      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 4px solid #f59e0b;
       margin-bottom: 25px;
       background: linear-gradient(to bottom, #fffbeb, #ffffff);
-      padding-top: 10px;
     }
-    .header h1 {
+    .logo-container {
+      flex-shrink: 0;
+    }
+    .logo-container img {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+    }
+    .header-text {
+      text-align: center;
+      flex: 1;
+    }
+    .header-text h1 {
       margin: 0;
-      font-size: 16pt;
+      font-size: 20pt;
       font-weight: bold;
-      color: #b45309;
+      color: #d97706;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      line-height: 1.2;
     }
-    .header h2 {
+    .header-text h2 {
       margin: 6px 0 0 0;
-      font-size: 12pt;
+      font-size: 14pt;
       color: #475569;
       font-weight: 600;
+    }
+    .header-text .subtitle {
+      margin: 4px 0 0 0;
+      font-size: 11pt;
+      color: #64748b;
+      font-weight: 500;
     }
     .content {
       padding: 0;
@@ -569,22 +970,37 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     .section {
       margin-bottom: 20px;
       page-break-inside: avoid;
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .section:last-of-type {
+      margin-bottom: 0;
     }
     .section-title {
-      font-size: 12pt;
+      font-size: 13pt;
       font-weight: bold;
-      color: #b45309;
-      margin: 20px 0 12px 0;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #fed7aa;
+      color: #d97706;
+      border-bottom: 3px solid #f59e0b;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.8px;
+      background: linear-gradient(to right, #fffbeb, #ffffff);
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 8px;
+      margin-left: -15px;
+      margin-right: -15px;
+      margin-top: -15px;
+      border-radius: 6px 6px 0 0;
     }
     .field-group {
-      margin-bottom: 15px;
-      padding: 8px;
+      margin-bottom: 10px;
+      padding: 6px 8px;
       background: #fffbeb;
-      border-left: 3px solid #fbbf24;
+      border-left: 3px solid #f59e0b;
       border-radius: 4px;
     }
     .field-label {
@@ -593,44 +1009,42 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       font-size: 9pt;
       margin-bottom: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
     }
     .field-value {
       color: #1e293b;
       font-size: 10pt;
       font-weight: 500;
-      padding-left: 8px;
+      padding-left: 4px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin-top: 15px;
       font-size: 9pt;
-      page-break-inside: auto;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    table thead {
-      background: #b45309;
-      color: #fff;
+    table th, table td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      text-align: left;
     }
     table th {
-      padding: 10px 8px;
-      text-align: left;
+      background: linear-gradient(to bottom, #d97706, #f59e0b);
+      color: #ffffff;
       font-weight: 600;
-      font-size: 9pt;
-      border: 1px solid #92400e;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    table td {
-      padding: 8px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
+      letter-spacing: 0.5px;
+      font-size: 9pt;
     }
     table tbody tr {
-      page-break-inside: avoid;
+      background: #ffffff;
     }
     table tbody tr:nth-child(even) {
       background: #fffbeb;
+    }
+    table tbody tr:hover {
+      background: #fef3c7;
     }
     .badge {
       display: inline-block;
@@ -641,13 +1055,23 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       border: 1px solid;
     }
     .footer {
-      margin-top: 30px;
-      padding-top: 15px;
-      border-top: 2px solid #e2e8f0;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 3px solid #e2e8f0;
       text-align: center;
-      font-size: 8pt;
+      font-size: 9pt;
       color: #64748b;
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 6px;
       page-break-inside: avoid;
+    }
+    .footer p {
+      margin: 4px 0;
+    }
+    .footer strong {
+      color: #d97706;
+      font-weight: 600;
     }
     button, .no-print, [class*="no-print"] {
       display: none !important;
@@ -664,12 +1088,80 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       body {
         margin: 0;
         padding: 0;
+        font-size: 9pt;
+      }
+      /* Hide empty elements in print */
+      :empty:not(input):not(textarea):not(select):not(img):not(br):not(hr):not(option) {
+        display: none !important;
+      }
+      /* Hide empty form fields */
+      input[value=""], input:not([value]),
+      textarea:empty,
+      select:not([value]):not([value=""]) {
+        display: none !important;
+      }
+      /* Hide empty containers */
+      div:empty, span:empty, p:empty {
+        display: none !important;
+      }
+      /* Remove excessive spacing */
+      [class*="space-y"]:empty,
+      [class*="gap-"]:empty {
+        display: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      /* Force 2-column layout for all grids */
+      .grid, [class*="grid"], [class*="grid-cols"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+      }
+      /* Full width items */
+      [class*="col-span"], [class*="full-width"] {
+        grid-column: 1 / -1 !important;
       }
       .section {
         page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      /* Field containers - show values from inputs */
+      [class*="relative"]:has(label), [class*="relative"]:has([class*="font-semibold"]) {
+        display: block !important;
+        margin-bottom: 8px !important;
+        padding: 6px 8px !important;
+        background: #f8fafc !important;
+        border-left: 3px solid #3b82f6 !important;
+        border-radius: 3px !important;
+        page-break-inside: avoid !important;
+      }
+      /* Show input values */
+      input[type="text"], input[type="number"], input[type="date"],
+      select, textarea {
+        display: block !important;
+        font-size: 9pt !important;
+        color: #1e293b !important;
+        margin: 0 !important;
+        padding: 2px 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+      }
+      /* Remove decorative elements */
+      [class*="gradient"], [class*="blur"], [class*="shadow-xl"], 
+      [class*="backdrop-blur"], [class*="absolute"] {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        position: static !important;
       }
       table {
         page-break-inside: auto;
+        font-size: 8pt;
       }
       tr {
         page-break-inside: avoid;
@@ -686,15 +1178,30 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 </head>
 <body>
   <div class="header">
-    <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
-    <h2>Department of Psychiatry - Prescription</h2>
+    ${logoBase64 ? `
+    <div class="logo-container">
+      <img src="${logoBase64}" alt="PGIMER Logo" />
+    </div>
+    ` : ''}
+    <div class="header-text">
+      <h1>POSTGRADUATE INSTITUTE OF MEDICAL EDUCATION & RESEARCH</h1>
+      <h2>Department of Psychiatry</h2>
+      <p class="subtitle">Prescription</p>
+    </div>
   </div>
   <div class="content">
     ${sectionHTML}
   </div>
   <div class="footer">
-    <p style="margin: 4px 0;"><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN')}</p>
-    <p style="margin: 4px 0;">PGIMER - Department of Psychiatry | Electronic Medical Record System</p>
+    <p><strong>Generated on:</strong> ${new Date().toLocaleString('en-IN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}</p>
+    <p><strong>PGIMER - Department of Psychiatry</strong> | Electronic Medical Record System</p>
+    <p style="font-size: 8pt; margin-top: 8px; color: #94a3b8;">This is a computer-generated document. No signature required.</p>
   </div>
 </body>
 </html>
@@ -707,7 +1214,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       setTimeout(() => {
         printWindow.print();
         toast.success('Print dialog opened');
-      }, 250);
+      }, 500);
     };
   };
 
@@ -2788,47 +3295,27 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
         </Card>
       )}
 
-{isResident || isFaculty || isJrSrUser || isAdminUser && <div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
-
-<Button
-  type="button"
-  variant="outline"
-  onClick={(() => navigate('/patients'))}
-  className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
->
-  <FiX className="mr-2" />
-  Cancel
-</Button>
-<Button
-  type="button"
-  onClick={() => {
-    if (returnTab) {
-      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-    } else {
-      navigate("/patients");
-    }
-  }}
-  className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
->
-  <FiSave className="mr-2" />
-Print All
-</Button>
-<Button
-  type="submit"
-  onClick={() => {
-    if (returnTab) {
-      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-    } else {
-      navigate("/patients");
-    }
-  }}
-  className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
->
-  <FiSave className="mr-2" />
-  View All Patient
-</Button>
-</div>
-}
+{(isResident || isFaculty || isJrSrUser || isAdminUser) && (
+  <div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => navigate('/patients')}
+      className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+    >
+      <FiX className="mr-2" />
+      Cancel
+    </Button>
+    <Button
+      type="button"
+      onClick={() => navigate("/patients")}
+      className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+    >
+      <FiSave className="mr-2" />
+      View All Patients
+    </Button>
+  </div>
+)}
     </div>
   );
 };
