@@ -4,9 +4,9 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiArrowLeft, FiPrinter, FiFileText, FiActivity } from 'react-icons/fi';
 import {
   useDeleteClinicalProformaMutation,
-} from '../../features/clinical/clinicalApiSlice';
-import { useGetADLFileByIdQuery } from '../../features/adl/adlApiSlice';
-import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApiSlice';
+} from '../../features/services/clinicalPerformaServiceApiSlice';
+import { useGetIntakeRecordByIdQuery } from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetPatientFilesQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
@@ -28,7 +28,7 @@ const ClinicalProformaDetails = ({ proforma }) => {
   
   // Fetch ADL file data if this is a complex case
   const isComplexCase = proforma?.doctor_decision === 'complex_case' && proforma?.adl_file_id;
-  const { data: adlFileData, isLoading: adlFileLoading } = useGetADLFileByIdQuery(
+  const { data: adlFileData, isLoading: adlFileLoading } = useGetIntakeRecordByIdQuery(
     proforma?.adl_file_id,
     { skip: !isComplexCase }
   );

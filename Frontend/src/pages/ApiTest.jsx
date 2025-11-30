@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetAllPatientsQuery } from '../features/patients/patientsApiSlice';
+import { useGetAllPatientRecordsQuery } from '../features/services/patientCardAndRecordServiceApiSlice';
 import Card from '../components/Card';
 import Button from '../components/Button';
 
@@ -8,7 +8,7 @@ const ApiTest = () => {
   const [testPatients, setTestPatients] = useState(false);
   
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = 
-    useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !testPatients });
+    useGetAllPatientRecordsQuery({ page: 1, limit: 10 }, { skip: !testPatients });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

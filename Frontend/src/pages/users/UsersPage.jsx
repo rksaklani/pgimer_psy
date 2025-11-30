@@ -8,10 +8,10 @@ import {
 } from 'react-icons/fi';
 import {
   useGetAllUsersQuery,
-  useDeleteUserMutation,
-  useActivateUserMutation,
-  useDeactivateUserMutation,
-} from '../../features/users/usersApiSlice';
+  useDeleteUserByIdMutation,
+  useActivateUserByIdMutation,
+  useDeactivateUserByIdMutation,
+} from '../../features/services/userServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -138,10 +138,10 @@ const UsersPage = () => {
       ),
       render: (row) => {
         const roleColors = {
-          'Admin': 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
-          'Faculty': 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
-          'Resident': 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
-          'Psychiatric Welfare Officer': 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
+          'Admin': 'bg-gradient-to-r from-primary-600 to-primary-700 text-white border-primary-200',
+          'Faculty': 'bg-gradient-to-r from-primary-500 to-primary-600 text-white border-primary-200',
+          'Resident': 'bg-gradient-to-r from-primary-400 to-primary-500 text-white border-primary-200',
+          'Psychiatric Welfare Officer': 'bg-gradient-to-r from-primary-600 to-primary-800 text-white border-primary-200',
         };
         return (
           <Badge className={roleColors[row.role] || 'bg-gray-100 text-gray-800 border-gray-200'}>
@@ -272,27 +272,27 @@ const UsersPage = () => {
   const roleStats = {
     'Admin': { 
       count: data?.data?.users?.filter(u => u.role === 'Admin').length || 0, 
-      color: 'from-red-500 to-rose-600', 
-      bg: 'from-red-50 to-rose-100/50', 
-      border: 'border-red-200/50' 
+      color: 'from-primary-600 to-primary-700', 
+      bg: 'from-primary-50 to-primary-100/50', 
+      border: 'border-primary-200/50' 
     },
     'Faculty': { 
       count: data?.data?.users?.filter(u => u.role === 'Faculty').length || 0, 
-      color: 'from-blue-500 to-indigo-600', 
-      bg: 'from-blue-50 to-indigo-100/50', 
-      border: 'border-blue-200/50' 
+      color: 'from-primary-500 to-primary-600', 
+      bg: 'from-primary-50 to-primary-100/50', 
+      border: 'border-primary-200/50' 
     },
     'Resident': { 
       count: data?.data?.users?.filter(u => u.role === 'Resident').length || 0, 
-      color: 'from-cyan-500 to-teal-600', 
-      bg: 'from-cyan-50 to-teal-100/50', 
-      border: 'border-cyan-200/50' 
+      color: 'from-primary-400 to-primary-500', 
+      bg: 'from-primary-50 to-primary-100/50', 
+      border: 'border-primary-200/50' 
     },
     'Psychiatric Welfare Officer': { 
       count: data?.data?.users?.filter(u => u.role === 'Psychiatric Welfare Officer').length || 0, 
-      color: 'from-green-500 to-emerald-600', 
-      bg: 'from-green-50 to-emerald-100/50', 
-      border: 'border-green-200/50' 
+      color: 'from-primary-600 to-primary-800', 
+      bg: 'from-primary-50 to-primary-100/50', 
+      border: 'border-primary-200/50' 
     },
   };
 

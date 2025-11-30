@@ -225,21 +225,21 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
           fixed inset-y-0 left-0 z-30 backdrop-blur-2xl bg-white/80 border-r border-white/40 shadow-2xl transform transition-all duration-300 ease-in-out
           lg:translate-x-0 lg:fixed lg:inset-y-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isMinimized ? 'w-20' : 'w-64'}
+          ${isMinimized ? 'w-16 lg:w-20' : 'w-72 sm:w-80 lg:w-64'}
         `}
       >
         <div className="h-full mt-6 flex flex-col">
           {/* Logo and Title Section */}
-          <div className={`flex items-center ${isMinimized ? 'justify-center px-1' : 'justify-between px-4'} h-16 border-b border-white/20 flex-shrink-0`}>
+          <div className={`flex items-center ${isMinimized ? 'justify-center px-1' : 'justify-between px-3 sm:px-4'} h-14 sm:h-16 border-b border-white/20 flex-shrink-0`}>
             {!isMinimized ? (
               <>
-                <div className="flex items-center">
+                <div className="flex items-center min-w-0 flex-1">
                   <div className="flex-shrink-0">
-                    <img src={PGI_Logo} alt="PGIMER Logo" className="w-8 h-8 object-contain" />
+                    <img src={PGI_Logo} alt="PGIMER Logo" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
                   </div>
-                  <div className="ml-3">
-                    <h1 className="text-lg font-bold text-primary-900">PGIMER PSY</h1>
-                    <p className="text-xs text-gray-600"> Psychiatry Department - PGIMER Chandigarh</p>
+                  <div className="ml-2 sm:ml-3 min-w-0">
+                    <h1 className="text-sm sm:text-base lg:text-lg font-bold text-primary-900 truncate">PGIMER PSY</h1>
+                    <p className="text-[10px] sm:text-xs text-gray-600 line-clamp-1 hidden sm:block">Psychiatry Department - PGIMER Chandigarh</p>
                   </div>
                 </div>
                 {/* Desktop minimize button */}
@@ -280,7 +280,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
           </div>
 
           {/* Navigation - scrollable middle section */}
-          <nav className={`flex-1 py-6 pb-48 space-y-2 overflow-y-auto min-h-0 ${isMinimized ? 'px-2' : 'px-4'}`}>
+          <nav className={`flex-1 py-4 sm:py-6 pb-48 space-y-1.5 sm:space-y-2 overflow-y-auto min-h-0 ${isMinimized ? 'px-1.5 sm:px-2' : 'px-3 sm:px-4'}`}>
             {isMWO(user?.role) ? (
               // MWO-specific beautiful navigation
               <MWONavigation onClose={onClose} isMinimized={isMinimized} />

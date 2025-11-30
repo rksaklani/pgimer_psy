@@ -35,7 +35,7 @@ import PrescriptionView from './pages/PrescribeMedication/PrescriptionView';
 
 // ADL File Pages
 import ADLFilesPage from './pages/adl/ADLFilesPage';
-import ADLFileDetails from './pages/adl/ADLFileDetails';
+// import ADLFileDetails from './pages/adl/ADLFileDetails';
 
 // User Management Pages
 import UsersPage from './pages/users/UsersPage';

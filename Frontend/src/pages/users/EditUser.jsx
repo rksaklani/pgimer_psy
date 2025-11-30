@@ -1,8 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   useGetUserByIdQuery
-} from '../../features/users/usersApiSlice';
+} from '../../features/services/userServiceApiSlice';
 import CreateUser from './CreateUser';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Card from '../../components/Card';

@@ -5,7 +5,7 @@ import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiRefreshCw, FiUsers } from 
 import {
   useGetAllClinicalProformasQuery,
   useDeleteClinicalProformaMutation,
-} from '../../features/clinical/clinicalApiSlice';
+} from '../../features/services/clinicalPerformaServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';

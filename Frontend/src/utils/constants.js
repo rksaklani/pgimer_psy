@@ -147,8 +147,11 @@ export const PATIENT_REGISTRATION_FORM = [
 
   { value: 'seen_in_walk_in_on', label: 'Seen in Walk-in On' }, // First examination date (walk-in case)
   { value: 'worked_up_on', label: 'Worked Up On' },
+  { value: 'cr_no', label: 'CR Number' },
   { value: 'psy_no', label: 'PSY Number' },
   { value: 'special_clinic_no', label: 'Special Clinic Number' },
+  { value: 'name', label: 'Full Name' },
+  { value: 'sex', label: 'Sex' },
   { value: 'age_group', label: 'Age Group' },
 
   // Personal Information
@@ -161,7 +164,8 @@ export const PATIENT_REGISTRATION_FORM = [
   { value: 'occupation', label: 'Occupation' },
   { value: 'education', label: 'Education' },
   { value: 'locality', label: 'Locality' },
-  { value: 'income', label: 'Income' },
+  { value: 'patient_income', label: 'Patient Income' },
+  { value: 'family_income', label: 'Family Income' },
   { value: 'religion', label: 'Religion' },
   { value: 'family_type', label: 'Family Type' },
 
@@ -191,6 +195,16 @@ export const PATIENT_REGISTRATION_FORM = [
   { value: 'district', label: 'District' },
   { value: 'city', label: 'City' },
   { value: 'pin_code', label: 'Pin Code' },
+
+
+  { value: 'present_address_line_', label: 'Present Address Line ' },
+  { value: 'present_city_town_village', label: 'Present City/Town/Village' },
+  { value: 'present_district', label: 'Present District' },
+  { value: 'present_state', label: 'Present State' },
+  { value: 'present_pin_code', label: 'Present Pin Code' },
+  { value: 'present_country', label: 'Present Country' },
+
+{value:"local_address", label: "Local Address"},
 
 
 //Addictional field

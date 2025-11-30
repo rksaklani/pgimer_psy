@@ -18,7 +18,7 @@ import {
   useRefreshTokenMutation,
   useUpdateActivityMutation,
   useLogoutMutation
-} from "../features/auth/authApiSlice";
+} from "../features/services/userServiceApiSlice";
 
 const SessionContext = createContext(null);
 

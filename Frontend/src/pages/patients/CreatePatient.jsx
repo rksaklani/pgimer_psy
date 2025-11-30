@@ -10,12 +10,16 @@ import {
   FiNavigation,  FiEdit3, FiSave, FiX, FiLayers, 
   FiChevronDown, FiChevronUp, FiArrowRight, 
 } from 'react-icons/fi';
-import {  useAssignPatientMutation, useCreatePatientCompleteMutation, useUpdatePatientMutation } from '../../features/patients/patientsApiSlice';
-import { useCreatePatientFilesMutation } from '../../features/patients/patientFilesApiSlice';
+import { 
+  useAssignPatientMutation, 
+  useCreatePatientRecordMutation, 
+  useUpdatePatientRecordMutation 
+} from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useCreatePatientFilesMutation } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import { selectCurrentUser, selectCurrentToken } from '../../features/auth/authSlice';
-import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import { useGetDoctorsQuery } from '../../features/services/userServiceApiSlice';
 import { updatePatientRegistrationForm, resetPatientRegistrationForm, selectPatientRegistrationForm } from '../../features/form/formSlice';
-import { useCreateClinicalProformaMutation } from '../../features/clinical/clinicalApiSlice';
+import { useCreateClinicalProformaMutation } from '../../features/services/clinicalPerformaServiceApiSlice';
 import { SelectWithOther } from '../../components/SelectWithOther';
 import { IconInput } from '../../components/IconInput';
 import Card from '../../components/Card';
@@ -37,9 +41,9 @@ const CreatePatient = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const formData = useSelector(selectPatientRegistrationForm);
-  const [createRecord, { isLoading }] = useCreatePatientCompleteMutation();
+  const [createRecord, { isLoading }] = useCreatePatientRecordMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
-  const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
+  const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientRecordMutation();
   const [createProforma] = useCreateClinicalProformaMutation();
   const [createPatientFiles] = useCreatePatientFilesMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });

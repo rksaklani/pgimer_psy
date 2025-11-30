@@ -8,8 +8,8 @@ import {
   FiNavigation, FiEdit3, FiSave, FiX, FiLayers, 
   FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiHash ,  FiPrinter
 } from 'react-icons/fi';
-import { useUpdatePatientMutation,  } from '../../features/patients/patientsApiSlice';
-import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApiSlice';
+import { useUpdatePatientRecordMutation } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetPatientFilesQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import Card from '../../components/Card';
@@ -19,7 +19,7 @@ import DatePicker from '../../components/CustomDatePicker';
 import FileUpload from '../../components/FileUpload';
 import FilePreview from '../../components/FilePreview';
 import {  formatDateForDatePicker } from '../../utils/formatters';
-import { useGetClinicalProformaByIdQuery } from '../../features/clinical/clinicalApiSlice';
+import { useGetClinicalProformaByIdQuery } from '../../features/services/clinicalPerformaServiceApiSlice';
 import {
   MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,

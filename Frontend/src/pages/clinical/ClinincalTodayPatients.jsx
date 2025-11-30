@@ -5,8 +5,8 @@ import {
   FiUser, FiPhone,  FiClock, FiEye,
   FiRefreshCw, FiPlusCircle, FiFileText, FiUsers,  FiShield, FiCheck
 } from 'react-icons/fi';
-import { useGetAllPatientsQuery, useMarkVisitCompletedMutation } from '../../features/patients/patientsApiSlice';
-import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
+import { useGetAllPatientRecordsQuery, useMarkVisitCompletedMutation } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetClinicalProformaByPatientIdQuery } from '../../features/services/clinicalPerformaServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { useSelector } from 'react-redux';
@@ -275,7 +275,7 @@ const ClinicalTodayPatients = () => {
 
   // Fetch patients data - use a high limit to get all today's patients at once
   // This ensures newly created patients appear immediately
-  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
+  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientRecordsQuery({
     page: 1,
     limit: 1000, // High limit to fetch all patients, then filter client-side for today
     // search: search.trim() || undefined // Only include search if it has a value

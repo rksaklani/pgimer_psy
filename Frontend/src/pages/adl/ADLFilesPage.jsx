@@ -7,8 +7,8 @@ import {
   FiMoreVertical,  FiCalendar, FiCheckCircle, FiEdit
 } from 'react-icons/fi';
 import {
-  useGetAllADLFilesQuery,
-} from '../../features/adl/adlApiSlice';
+  useGetAllIntakeRecordsQuery,
+} from '../../features/services/intakeRecordServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -30,7 +30,7 @@ const ADLFilesPage = () => {
   }, [search]);
 
   // Only fetch complex cases by default (where clinical_proforma_id exists)
-  const { data, isLoading, isFetching, refetch, error } = useGetAllADLFilesQuery({ 
+  const { data, isLoading, isFetching, refetch, error } = useGetAllIntakeRecordsQuery({ 
     page, 
     limit,
     include_all: !showOnlyComplexCases // If showOnlyComplexCases is true, don't include all

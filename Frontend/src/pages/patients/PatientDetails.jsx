@@ -4,11 +4,11 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { FiX, FiEdit } from 'react-icons/fi';
 import {
-  useGetPatientByIdQuery
-} from '../../features/patients/patientsApiSlice';
-import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
-import { useGetADLFileByPatientIdQuery } from '../../features/adl/adlApiSlice';
-import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+  useGetPatientRecordByIdQuery
+} from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetClinicalProformaByPatientIdQuery } from '../../features/services/clinicalPerformaServiceApiSlice';
+import { useGetIntakeRecordsByPatientIdQuery } from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetDoctorsQuery } from '../../features/services/userServiceApiSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -77,7 +77,7 @@ const PatientDetails = () => {
   }, [searchParams, patientId, setSearchParams]);
 
   // Ensure queries refetch when ID changes by using skip option if id is invalid
-  const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(patientId, {
+  const { data: patientData, isLoading: patientLoading } = useGetPatientRecordByIdQuery(patientId, {
     skip: !isValidPatientId(patientId), // Skip query if id is not available or invalid
   });
   const { data: clinicalData } = useGetClinicalProformaByPatientIdQuery(patientId, {

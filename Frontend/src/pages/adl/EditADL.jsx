@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useGetADLFileByIdQuery, useUpdateADLFileMutation, useCreateADLFileMutation } from '../../features/adl/adlApiSlice';
-import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
-import { useGetPatientFilesQuery, useUpdatePatientFilesMutation, useCreatePatientFilesMutation } from '../../features/patients/patientFilesApiSlice';
+import { 
+  useGetIntakeRecordByIdQuery, 
+  useUpdateIntakeRecordMutation, 
+  useCreateIntakeRecordMutation 
+} from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { 
+  useGetPatientFilesQuery, 
+  useUpdatePatientFilesMutation, 
+  useCreatePatientFilesMutation 
+} from '../../features/services/patientCardAndRecordServiceApiSlice';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { ADL_FILE_FORM } from '../../utils/constants';
@@ -76,7 +84,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
   // Use prop id if provided, otherwise use URL param
   const id = adlFileId || urlId;
 
-  const { data: adlData, isLoading: isLoadingADL } = useGetADLFileByIdQuery(id, { skip: !id });
+  const { data: adlData, isLoading: isLoadingADL } = useGetIntakeRecordByIdQuery(id, { skip: !id });
   // Handle different possible API response structures
   // Backend returns: { success: true, data: { adlFile: ... } }
   const adlFile = adlData?.data?.adlFile || adlData?.data?.adl_file || adlData?.data?.file || adlData?.data;
@@ -109,7 +117,7 @@ const EditADL = ({ adlFileId, isEmbedded = false, patientId: propPatientId = nul
   const existingFiles = patientFilesData?.data?.files || [];
   const canEditFiles = patientFilesData?.data?.can_edit !== false;
   
-  const { data: patientData, isLoading: isLoadingPatient } = useGetPatientByIdQuery(patientId, { skip: !patientId });
+  const { data: patientData, isLoading: isLoadingPatient } = useGetPatientRecordByIdQuery(patientId, { skip: !patientId });
   const patient = patientData?.data?.patient;
 
   // Card expand/collapse state

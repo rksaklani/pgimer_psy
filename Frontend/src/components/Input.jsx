@@ -16,7 +16,7 @@ const Input = ({
       {label && (
         <label
           htmlFor={name}
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-1"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
@@ -32,7 +32,7 @@ const Input = ({
         disabled={disabled}
         required={required}
         className={`
-          w-full px-3 py-2 backdrop-blur-md bg-white/60 border border-white/40 rounded-lg shadow-sm
+          w-full px-3 py-2 sm:px-3 sm:py-2 text-sm sm:text-base backdrop-blur-md bg-white/60 border border-white/40 rounded-lg shadow-sm
           placeholder-gray-400 text-gray-900
           focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80
           disabled:bg-gray-100/60 disabled:cursor-not-allowed disabled:backdrop-blur-sm

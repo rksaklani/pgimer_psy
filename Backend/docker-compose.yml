@@ -1,0 +1,204 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: pgi-emrs-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pgi_emrs}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./common/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - emrs-network
+
+  # User Service (includes session management)
+  user-service:
+    build:
+      context: .
+      dockerfile: ./services/user-service/Dockerfile
+    container_name: user-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-pgi_emrs}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-refresh-secret-key}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+  # Out Patients Card and Out Patient Record Service
+  out-patients-card-and-out-patient-record-service:
+    build:
+      context: .
+      dockerfile: ./services/out-patients-card-and-out-patient-record-service/Dockerfile
+    container_name: out-patients-card-and-out-patient-record-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-pgi_emrs}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      USER_SERVICE_URL: http://user-service:3001
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
+      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record-service:3004
+    ports:
+      - "3002:3002"
+    volumes:
+      - patient_files:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+  # Adult Walk-in Clinical Proforma Service (includes clinical options)
+  adult-walk-in-clinical-performa-service:
+    build:
+      context: .
+      dockerfile: ./services/adult-walk-in-clinical-performa-service/Dockerfile
+    container_name: adult-walk-in-clinical-performa-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-pgi_emrs}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record-service:3004
+      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record-service:3002
+      PRESCRIPTION_SERVICE_URL: http://prescription-service:3005
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      out-patients-card-and-out-patient-record-service:
+        condition: service_started
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+  # Out Patient Intake Record Service
+  out-patient-intake-record-service:
+    build:
+      context: .
+      dockerfile: ./services/out-patient-intake-record-service/Dockerfile
+    container_name: out-patient-intake-record-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3004
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-pgi_emrs}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record-service:3002
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
+    ports:
+      - "3004:3004"
+    volumes:
+      - intake_record_files:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      out-patients-card-and-out-patient-record-service:
+        condition: service_started
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+  # Prescription Service
+  prescription-service:
+    build:
+      context: .
+      dockerfile: ./services/prescription-service/Dockerfile
+    container_name: prescription-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3005
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-pgi_emrs}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      adult-walk-in-clinical-performa-service:
+        condition: service_started
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+  # Nginx API Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: emrs-nginx-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - user-service
+      - out-patients-card-and-out-patient-record-service
+      - adult-walk-in-clinical-performa-service
+      - out-patient-intake-record-service
+      - prescription-service
+    networks:
+      - emrs-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  patient_files:
+    driver: local
+  intake_record_files:
+    driver: local
+
+networks:
+  emrs-network:
+    driver: bridge

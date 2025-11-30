@@ -2,9 +2,9 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
-import { useGetPrescriptionByIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
-import { useGetClinicalProformaByIdQuery } from '../../features/clinical/clinicalApiSlice';
-import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
+import { useGetPrescriptionByIdQuery } from '../../features/services/prescriptionServiceApiSlice';
+import { useGetClinicalProformaByIdQuery } from '../../features/services/clinicalPerformaServiceApiSlice';
+import { useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FiPackage, FiUser, FiEdit, FiPrinter, FiFileText, FiArrowLeft, FiChevronDown, FiChevronUp } from 'react-icons/fi';

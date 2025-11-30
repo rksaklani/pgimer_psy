@@ -8,8 +8,15 @@ import {
   FiPhone, FiFileText, FiHash, FiStar, FiActivity, FiCalendar,
   FiGlobe, FiUserCheck, FiInfo, FiAlertCircle
 } from 'react-icons/fi';
-import { useSearchPatientsQuery, useAssignPatientMutation, useUpdatePatientMutation,useCreatePatientCompleteMutation, useGetAllPatientsQuery, useGetPatientByIdQuery, useCreatePatientMutation, useGetPatientVisitCountQuery } from '../../features/patients/patientsApiSlice';
-import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import { 
+  useGetAllPatientRecordsQuery, 
+  useGetPatientRecordByIdQuery, 
+  useCreatePatientRecordMutation, 
+  useUpdatePatientRecordMutation,
+  useAssignPatientMutation,
+  useGetPatientVisitCountQuery 
+} from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetDoctorsQuery } from '../../features/services/userServiceApiSlice';
 import Card from '../../components/Card';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
@@ -19,12 +26,12 @@ const SelectExistingPatient = () => {
   const navigate = useNavigate();
 
 
-  const [createRecord, { isLoading }] = useCreatePatientMutation();
+  const [createRecord, { isLoading }] = useCreatePatientRecordMutation();
   // const [createRecordComplete, { isLoading: isLoadingComplete }] = useCreatePatientCompleteMutation();
 
   
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
-  const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
+  const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientRecordMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
   const [crNumber, setCrNumber] = useState('');
@@ -33,14 +40,15 @@ const SelectExistingPatient = () => {
   const justUpdatedDoctorRef = useRef(false);
 
   // Search for patient by CR number
-  const { data: searchData, isLoading: searching, refetch: refetchPatient } = useSearchPatientsQuery(
+  // Note: Search functionality needs to be implemented - using getAllPatientRecords for now
+  const { data: searchData, isLoading: searching, refetch: refetchPatient } = useGetAllPatientRecordsQuery(
     { search: crNumber, limit: 5 },
     { skip: !crNumber || crNumber.length < 2 }
   );
 
 
 
-  const { data: demographicData, isLoading: loadingDemographics, refetch: refetchDemographics } = useGetPatientByIdQuery(
+  const { data: demographicData, isLoading: loadingDemographics, refetch: refetchDemographics } = useGetPatientRecordByIdQuery(
     selectedPatientId,
     { skip: !selectedPatientId }
   );
@@ -63,8 +71,8 @@ const SelectExistingPatient = () => {
       return;
     }
     
-    if (searchData?.data?.patients && crNumber && crNumber.length >= 2) {
-      const exactMatch = searchData.data.patients.find(
+    if (searchData?.data?.records && crNumber && crNumber.length >= 2) {
+      const exactMatch = searchData.data.records.find(
         (p) => p.cr_no?.toLowerCase() === crNumber.toLowerCase()
       );
 
@@ -96,9 +104,9 @@ const SelectExistingPatient = () => {
         if (!newDoctorId || newDoctorId !== String(exactMatch.assigned_doctor_id || '')) {
           setNewDoctorId(exactMatch.assigned_doctor_id ? String(exactMatch.assigned_doctor_id) : '');
         }
-      } else if (searchData.data.patients.length === 1) {
+      } else if (searchData.data.records.length === 1) {
         // Auto-select if only one result
-        const patient = searchData.data.patients[0];
+        const patient = searchData.data.records[0];
         if (selectedPatient && selectedPatient.id === patient.id) {
           setSelectedPatient(prev => {
             // If current state has doctor info, preserve it (it's more recent than search results)
@@ -555,7 +563,7 @@ const SelectExistingPatient = () => {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {searchData.data.patients.map((p) => (
+                  {searchData.data.records.map((p) => (
                     <div key={p.id} className="bg-white rounded-lg p-4 border border-blue-100 flex items-center gap-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <FiUser className="w-4 h-4 text-blue-600" />

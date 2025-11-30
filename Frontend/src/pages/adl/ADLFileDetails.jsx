@@ -2,10 +2,10 @@ import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiArrowLeft, FiDownload, FiUpload, FiArchive, FiUser, FiFileText, FiActivity } from 'react-icons/fi';
 import {
-  useGetADLFileByIdQuery,
-} from '../../features/adl/adlApiSlice';
-import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
-import { useGetClinicalProformaByIdQuery } from '../../features/clinical/clinicalApiSlice';
+  useGetIntakeRecordByIdQuery,
+} from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetClinicalProformaByIdQuery } from '../../features/services/clinicalPerformaServiceApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
@@ -15,11 +15,11 @@ import { formatDate, formatDateTime } from '../../utils/formatters';
 const ADLFileDetails = () => {
   const { id } = useParams();
 
-  const { data, isLoading, error, isError } = useGetADLFileByIdQuery(id);
+  const { data, isLoading, error, isError } = useGetIntakeRecordByIdQuery(id);
   
   // Fetch full patient details for complex case
-  const file = data?.data?.adlFile || data?.data?.file; // Support both response formats
-  const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(
+  const file = data?.data?.intakeRecord || data?.data?.file; // Support both response formats
+  const { data: patientData, isLoading: patientLoading } = useGetPatientRecordByIdQuery(
     file?.patient_id,
     { skip: !file?.patient_id }
   );

@@ -9,11 +9,20 @@ import {
   useAddClinicalOptionMutation,
   useDeleteClinicalOptionMutation,
   useGetAllClinicalProformasQuery
-} from '../../features/clinical/clinicalApiSlice';
-import { useGetADLFileByIdQuery, useGetAllADLFilesQuery,useUpdateADLFileMutation, useCreateADLFileMutation } from '../../features/adl/adlApiSlice';
-import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
-import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
-import { useGetPatientFilesQuery, useUpdatePatientFilesMutation, useCreatePatientFilesMutation } from '../../features/patients/patientFilesApiSlice';
+} from '../../features/services/clinicalPerformaServiceApiSlice';
+import { 
+  useGetIntakeRecordByIdQuery, 
+  useGetAllIntakeRecordsQuery,
+  useUpdateIntakeRecordMutation, 
+  useCreateIntakeRecordMutation 
+} from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetDoctorsQuery } from '../../features/services/userServiceApiSlice';
+import { 
+  useGetPatientFilesQuery, 
+  useUpdatePatientFilesMutation, 
+  useCreatePatientFilesMutation 
+} from '../../features/services/patientCardAndRecordServiceApiSlice';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { CLINICAL_PROFORMA_FORM, VISIT_TYPES, DOCTOR_DECISION, CASE_SEVERITY } from '../../utils/constants';
@@ -25,7 +34,7 @@ import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
 import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp, FiLoader, FiCalendar, FiPrinter } from 'react-icons/fi';
 import icd11Codes from '../../assets/ICD11_Codes.json';
-import { useUpdatePrescriptionMutation,useGetAllPrescriptionQuery, useCreatePrescriptionMutation } from '../../features/prescriptions/prescriptionApiSlice';
+import { useUpdatePrescriptionMutation, useGetAllPrescriptionsQuery, useCreatePrescriptionMutation } from '../../features/services/prescriptionServiceApiSlice';
 import PrescriptionEdit from '../PrescribeMedication/PrescriptionEdit';
 import EditADL from '../adl/EditADL';
 import DatePicker from '../../components/CustomDatePicker';
@@ -86,20 +95,20 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
   const {
     data: adlFileData,
     isLoading: isLoadingADL
-  } = useGetADLFileByIdQuery(
+  } = useGetIntakeRecordByIdQuery(
     proforma?.adl_file_id,
     { skip: !isComplexCase }
   );
 
   // Fetch patient data - use patient_id from propInitialData or proforma
   const patientId = propInitialData?.patient_id || proforma?.patient_id;
-  const { data: patientData } = useGetPatientByIdQuery(
+  const { data: patientData } = useGetPatientRecordByIdQuery(
     patientId,
     { skip: !patientId }
   );
   const patient = patientData?.data?.patient;
 
-  const { data: existingAdlFileData } = useGetAllADLFilesQuery({});
+  const { data: existingAdlFileData } = useGetAllIntakeRecordsQuery({});
   console.log("existingAdlFile", existingAdlFileData);
 
   const existingAdlFile = existingAdlFileData?.data?.files?.find(f => f.patient_id === patient?.id && f.clinical_proforma_id === proforma?.id);
@@ -121,8 +130,8 @@ console.log("existingPrescriptionData", existingPrescriptionData);
   // Update and Create mutations
   const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
   const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
-  // const [updateADLFile] = useUpdateADLFileMutation();
-  const [createADLFile, { isLoading: isCreatingADLFile }] = useCreateADLFileMutation();
+  // const [updateADLFile] = useUpdateIntakeRecordMutation();
+  const [createADLFile, { isLoading: isCreatingADLFile }] = useCreateIntakeRecordMutation();
   // Helper functions
 
   

@@ -48,10 +48,12 @@ const MainLayout = () => {
           onToggleMinimize={() => setSidebarMinimized(!sidebarMinimized)}
         />
 
-        <main className={`p-4 sm:p-6 lg:p-8 transition-all duration-300 ease-in-out ${
+        <main className={`p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8 transition-all duration-300 ease-in-out ${
           sidebarMinimized ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
-          <Outlet />
+          <div className="max-w-[1920px] mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

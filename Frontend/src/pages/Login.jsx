@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { useLoginMutation, useVerifyLoginOTPMutation } from '../features/auth/authApiSlice';
+import { useLoginMutation, useVerifyLoginOTPMutation } from '../features/services/userServiceApiSlice';
 import { setCredentials, setOTPRequired, selectOTPRequired, selectLoginData } from '../features/auth/authSlice';
 import {
   Eye,

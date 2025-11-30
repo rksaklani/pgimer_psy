@@ -1,0 +1,31 @@
+-- ============================================================================
+-- Database Initialization Reference
+-- ============================================================================
+-- 
+-- To create a fresh database, use the schema.sql file:
+-- 
+--   psql -U postgres -d pgi_emrs -f common/database/schema.sql
+-- 
+-- OR connect to your database and run:
+-- 
+--   \i common/database/schema.sql
+-- 
+-- The schema.sql file creates all 8 core tables:
+--   1. users
+--   2. out_patients_card
+--   3. out_patient_record
+--   4. adult_walk_in_clinical_performa
+--   5. out_patient_intake_record
+--   6. prescription
+--   7. audit_logs
+--   8. file_uploads
+-- 
+-- All tables include:
+--   - Primary keys
+--   - Foreign key relationships
+--   - Indexes for performance
+--   - Triggers for updated_at timestamps
+--   - Constraints and defaults
+-- 
+-- ============================================================================
+

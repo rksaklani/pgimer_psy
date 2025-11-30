@@ -10,28 +10,21 @@ import {
 } from 'react-icons/fi';
 import { selectCurrentUser, selectIsAuthenticated } from '../features/auth/authSlice';
 import { 
-  useGetAllPatientsQuery, 
-  useGetPatientsStatsQuery, 
-  useGetPatientStatsQuery,
-  useGetAgeDistributionQuery
-} from '../features/patients/patientsApiSlice';
+  useGetAllPatientRecordsQuery, 
+  useGetFileStatsQuery
+} from '../features/services/patientCardAndRecordServiceApiSlice';
 import { 
   useGetClinicalStatsQuery, 
-  useGetCasesByDecisionQuery, 
-  useGetMyProformasQuery, 
-  useGetComplexCasesQuery,
-  useGetAllClinicalProformasQuery,
-  useGetVisitTrendsQuery
-} from '../features/clinical/clinicalApiSlice';
+  useGetAllClinicalProformasQuery
+} from '../features/services/clinicalPerformaServiceApiSlice';
 import { 
-  useGetADLStatsQuery, 
-  useGetFilesByStatusQuery, 
-  useGetActiveFilesQuery,
-  useGetAllADLFilesQuery
-} from '../features/adl/adlApiSlice';
-import { useGetAllPrescriptionQuery } from '../features/prescriptions/prescriptionApiSlice';
-import { useGetPatientFilesQuery, useGetFileStatsQuery } from '../features/patients/patientFilesApiSlice';
-import { useGetDoctorsQuery, useGetUserStatsQuery } from '../features/users/usersApiSlice';
+  useGetIntakeRecordStatsQuery, 
+  useGetIntakeRecordsByStatusQuery, 
+  useGetActiveIntakeRecordsQuery,
+  useGetAllIntakeRecordsQuery
+} from '../features/services/intakeRecordServiceApiSlice';
+import { useGetAllPrescriptionsQuery } from '../features/services/prescriptionServiceApiSlice';
+import { useGetDoctorsQuery, useGetUserStatsQuery } from '../features/services/userServiceApiSlice';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
@@ -81,12 +74,12 @@ const StatCard = ({
   isLoading = false
 }) => {
   const content = (
-    <div className={`group relative backdrop-blur-xl bg-white/70 border border-white/40 rounded-2xl p-6 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 ${isLoading ? 'animate-pulse' : ''}`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    <div className={`group relative backdrop-blur-xl bg-white/70 border border-white/40 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-xl sm:shadow-2xl hover:shadow-2xl sm:hover:shadow-3xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 ${isLoading ? 'animate-pulse' : ''}`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <div className="relative flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">{title}</p>
-          <p className="text-4xl font-extrabold text-gray-900 mb-1">{isLoading ? '...' : (value || 0)}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5 sm:mb-2 truncate">{title}</p>
+          <p className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 truncate">{isLoading ? '...' : (value || 0)}</p>
           {subtitle && (
             <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
           )}
@@ -99,8 +92,8 @@ const StatCard = ({
             </div>
           )}
         </div>
-        <div className={`p-3 backdrop-blur-md bg-gradient-to-br ${colorClasses} rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 border border-white/30`}>
-          <Icon className="h-7 w-7 text-white" />
+        <div className={`p-2 sm:p-2.5 md:p-3 backdrop-blur-md bg-gradient-to-br ${colorClasses} rounded-lg sm:rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 border border-white/30 flex-shrink-0`}>
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -177,18 +170,21 @@ const Dashboard = () => {
   // Don't make any queries if not authenticated
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   // Admin Stats - Full System Analytics
-  const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery(undefined, {
-    skip: !isAdminUser,
-    pollingInterval: isAdminUser ? 30000 : 0,
-    refetchOnMountOrArgChange: true,
-  });
+  // Note: Patient stats endpoint needs to be implemented in the service
+  // const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery(undefined, {
+  //   skip: !isAdminUser,
+  //   pollingInterval: isAdminUser ? 30000 : 0,
+  //   refetchOnMountOrArgChange: true,
+  // });
+  const patientStats = null;
+  const patientsLoading = false;
 
   const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStatsQuery(undefined, {
     skip: !isAdminUser,
@@ -196,7 +192,7 @@ const Dashboard = () => {
     refetchOnMountOrArgChange: true,
   });
 
-  const { data: adlStats, isLoading: adlLoading } = useGetADLStatsQuery(undefined, {
+  const { data: adlStats, isLoading: adlLoading } = useGetIntakeRecordStatsQuery(undefined, {
     skip: !isAdminUser,
     pollingInterval: isAdminUser ? 30000 : 0,
     refetchOnMountOrArgChange: true,
@@ -214,62 +210,49 @@ const Dashboard = () => {
   });
 
   // Role-specific stats for Faculty/Resident
-  const { data: decisionStats } = useGetCasesByDecisionQuery(
-    isJrSrUser ? { user_id: user?.id } : undefined, 
-    { 
-      skip: !isAuthenticated || !isJrSrUser, 
-      refetchOnMountOrArgChange: true 
-    }
-  );
+  // Note: These endpoints need to be implemented in the clinical service
+  // const { data: decisionStats } = useGetCasesByDecisionQuery(
+  const decisionStats = null;
 
   // Visit trends for all roles
-  const { data: visitTrends } = useGetVisitTrendsQuery(
-    { period: selectedPeriod, ...(isJrSrUser ? { user_id: user?.id } : {}) },
-    { 
-      skip: !isAuthenticated,
-      refetchOnMountOrArgChange: true 
-    }
-  );
+  // Note: This endpoint needs to be implemented
+  // const { data: visitTrends } = useGetVisitTrendsQuery(
+  const visitTrends = null;
 
   // Age distribution for admin
-  const { data: ageDistribution } = useGetAgeDistributionQuery(undefined, {
-    skip: !isAdminUser,
-    refetchOnMountOrArgChange: true,
-  });
+  // Note: Age distribution endpoint needs to be implemented
+  // const { data: ageDistribution } = useGetAgeDistributionQuery(undefined, {
+  const ageDistribution = null;
 
-  const { data: myProformas } = useGetMyProformasQuery({ page: 1, limit: 10 }, { 
-    skip: !isJrSrUser, 
-    refetchOnMountOrArgChange: true 
-  });
+  // Note: These endpoints need to be implemented in the clinical service
+  // const { data: myProformas } = useGetMyProformasQuery({ page: 1, limit: 10 }, { 
+  const myProformas = null;
 
-  const { data: complexCases } = useGetComplexCasesQuery({ page: 1, limit: 5 }, { 
-    skip: !isJrSrUser, 
-    refetchOnMountOrArgChange: true 
-  });
+  // const { data: complexCases } = useGetComplexCasesQuery({ page: 1, limit: 5 }, { 
+  const complexCases = null;
 
-  const { data: activeADLFiles } = useGetActiveFilesQuery(undefined, { 
+  const { data: activeADLFiles } = useGetActiveIntakeRecordsQuery(undefined, { 
     skip: !isJrSrUser, 
     refetchOnMountOrArgChange: true 
   });
 
   // Role-specific stats for MWO
-  const { data: outpatientStats } = useGetPatientsStatsQuery(undefined, { 
+  // Note: Outpatient stats endpoint needs to be implemented
+  // const { data: outpatientStats } = useGetPatientsStatsQuery(undefined, {
+  const outpatientStats = null;
+
+  const { data: adlByStatus } = useGetIntakeRecordsByStatusQuery(undefined, { 
     skip: !isMwo, 
     refetchOnMountOrArgChange: true 
   });
 
-  const { data: adlByStatus } = useGetFilesByStatusQuery(undefined, { 
-    skip: !isMwo, 
-    refetchOnMountOrArgChange: true 
-  });
-
-  const { data: myRecords } = useGetAllPatientsQuery({ page: 1, limit: 10 }, { 
+  const { data: myRecords } = useGetAllPatientRecordsQuery({ page: 1, limit: 10 }, { 
     skip: !isMwo, 
     refetchOnMountOrArgChange: true 
   });
 
   // Get recent prescriptions for all roles
-  const { data: recentPrescriptions } = useGetAllPrescriptionQuery({ 
+  const { data: recentPrescriptions } = useGetAllPrescriptionsQuery({ 
     page: 1, 
     limit: 5 
   }, { 
@@ -277,7 +260,7 @@ const Dashboard = () => {
   });
 
   // Get recent ADL files
-  const { data: recentADLFiles } = useGetAllADLFilesQuery({ 
+  const { data: recentADLFiles } = useGetAllIntakeRecordsQuery({ 
     page: 1, 
     limit: 5 
   }, { 
@@ -483,7 +466,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -493,20 +476,20 @@ const Dashboard = () => {
   if (isAdminUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8">
           {/* Welcome Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-5 md:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                 Welcome back, {user?.name || 'Admin'}! 👑
               </h1>
-              <p className="text-gray-600 mt-1">System Administrator Dashboard - Full System Analytics</p>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">System Administrator Dashboard - Full System Analytics</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <select
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-4 py-2 bg-white/70 backdrop-blur-md border border-white/40 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 sm:px-4 py-2 bg-white/70 backdrop-blur-md border border-white/40 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="day">Today</option>
                 <option value="week">This Week</option>
@@ -524,12 +507,12 @@ const Dashboard = () => {
           </div>
 
           {/* Admin KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             <StatCard
               title="Total Patients"
               value={patientStats?.data?.stats?.total_patients || 0}
               icon={FiUsers}
-              colorClasses="from-blue-500 to-blue-600"
+              colorClasses="from-primary-500 to-primary-600"
               to="/patients"
               subtitle="Registered patients"
             />
@@ -537,7 +520,7 @@ const Dashboard = () => {
               title="Clinical Proformas"
               value={clinicalStats?.data?.stats?.total_proformas || 0}
               icon={FiFileText}
-              colorClasses="from-green-500 to-green-600"
+              colorClasses="from-primary-600 to-primary-700"
               to="/clinical"
               subtitle="Walk-in assessments"
             />
@@ -545,7 +528,7 @@ const Dashboard = () => {
               title="Out Patient Intake Record  Files"
               value={adlStats?.data?.stats?.total_files || 0}
               icon={FiFolder}
-              colorClasses="from-purple-500 to-purple-600"
+              colorClasses="from-primary-700 to-primary-800"
               // to="/adl-files"
               subtitle="Outpatient intake records"
             />
@@ -553,18 +536,18 @@ const Dashboard = () => {
               title="Total Staff"
               value={totalStaff}
               icon={FiBriefcase}
-              colorClasses="from-orange-500 to-orange-600"
+              colorClasses="from-primary-500 to-indigo-600"
               subtitle="Faculty + Residents"
             />
           </div>
 
           {/* Secondary Admin KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             <StatCard
               title="Complex Cases"
               value={clinicalStats?.data?.stats?.complex_cases || 0}
               icon={FiAlertCircle}
-              colorClasses="from-red-500 to-red-600"
+              colorClasses="from-primary-800 to-primary-900"
               to="/adl-files"
               subtitle="Requiring attention"
             />
@@ -572,21 +555,21 @@ const Dashboard = () => {
               title="First Visits"
               value={clinicalStats?.data?.stats?.first_visits || 0}
               icon={FiCalendar}
-              colorClasses="from-indigo-500 to-indigo-600"
+              colorClasses="from-primary-400 to-primary-500"
               subtitle="New patient visits"
             />
             <StatCard
               title="Follow-ups"
               value={clinicalStats?.data?.stats?.follow_ups || 0}
               icon={FiActivity}
-              colorClasses="from-teal-500 to-teal-600"
+              colorClasses="from-primary-600 to-indigo-600"
               subtitle="Return visits"
             />
             <StatCard
               title="Files Uploaded"
               value={fileStats?.data?.stats?.total_files || 0}
               icon={FiUpload}
-              colorClasses="from-pink-500 to-pink-600"
+              colorClasses="from-primary-500 to-primary-700"
               subtitle={`${fileStats?.data?.stats?.files_this_month || 0} this month`}
             />
           </div>
@@ -603,7 +586,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Doughnut 
                   data={genderChartData} 
                   options={{
@@ -630,7 +613,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Bar 
                   data={visitTypeChartData} 
                   options={{
@@ -657,7 +640,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Doughnut 
                   data={adlStatusChartData} 
                   options={{
@@ -684,7 +667,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Line 
                   data={visitTrendData} 
                   options={{
@@ -737,7 +720,7 @@ const Dashboard = () => {
                         description={`Patient: ${proforma.patient_name || 'N/A'} - Visit: ${proforma.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up'}`}
                         time={proforma.created_at ? formatDateTime(proforma.created_at) : 'N/A'}
                         status={proforma.doctor_decision === 'complex_case' ? 'complex' : 'simple'}
-                        color="from-green-500 to-green-600"
+                        color="from-primary-600 to-primary-700"
                       />
                     ))}
                     {recentADLFiles?.data?.files?.slice(0, 3).map((file, idx) => (
@@ -748,7 +731,7 @@ const Dashboard = () => {
                         description={`Patient: ${file.patient_name || 'N/A'} - Out Patient Intake Record  No: ${file.adl_no || 'N/A'}`}
                         time={file.created_at ? formatDateTime(file.created_at) : 'N/A'}
                         status={file.file_status}
-                        color="from-purple-500 to-purple-600"
+                        color="from-primary-700 to-primary-800"
                       />
                     ))}
                     {recentPrescriptions?.data?.prescriptions?.slice(0, 2).map((prescription, idx) => (
@@ -759,7 +742,7 @@ const Dashboard = () => {
                         description={`Medicine: ${prescription.medicine || 'N/A'}`}
                         time={prescription.created_at ? formatDateTime(prescription.created_at) : 'N/A'}
                         status="completed"
-                        color="from-blue-500 to-blue-600"
+                        color="from-primary-500 to-primary-600"
                       />
                     ))}
                   </>
@@ -811,7 +794,7 @@ const Dashboard = () => {
                   title="View Reports"
                   description="Analytics & insights"
                   to="/reports"
-                  colorClasses="hover:from-teal-50 hover:to-cyan-50"
+                  colorClasses="hover:from-primary-50 hover:to-primary-100"
                 />
               </div>
             </Card>
@@ -829,19 +812,19 @@ const Dashboard = () => {
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-blue-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-50/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Male Patients</span>
                   <Badge variant="info">{patientStats?.data?.stats?.male_patients || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-pink-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-100/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Female Patients</span>
                   <Badge variant="info">{patientStats?.data?.stats?.female_patients || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-200/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Complex Cases</span>
                   <Badge variant="warning">{patientStats?.data?.stats?.complex_cases || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-green-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-50/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Out Patient Intake Record of Patients</span>
                   <Badge variant="success">{patientStats?.data?.stats?.patients_with_adl || 0}</Badge>
                 </div>
@@ -858,19 +841,19 @@ const Dashboard = () => {
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-green-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-50/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Simple Cases</span>
                   <Badge variant="info">{clinicalStats?.data?.stats?.simple_cases || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-red-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-300/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Severe Cases</span>
                   <Badge variant="error">{clinicalStats?.data?.stats?.severe_cases || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-yellow-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-200/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Cases Requiring Out Patient Intake Record</span>
                   <Badge variant="warning">{clinicalStats?.data?.stats?.cases_requiring_adl || 0}</Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-blue-50/50 rounded-lg">
+                <div className="flex justify-between items-center p-3 bg-primary-50/50 rounded-lg">
                   <span className="text-gray-700 font-medium">Moderate Cases</span>
                   <Badge variant="warning">{clinicalStats?.data?.stats?.moderate_cases || 0}</Badge>
                 </div>
@@ -886,7 +869,7 @@ const Dashboard = () => {
   if (isFaculty) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50">
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8">
           {/* Welcome Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -901,7 +884,7 @@ const Dashboard = () => {
               title="My Clinical Proformas" 
               value={myProformas?.data?.pagination?.total || 0} 
               icon={FiFileText} 
-              colorClasses="from-green-500 to-green-600"
+              colorClasses="from-primary-600 to-primary-700"
               to="/clinical"
               subtitle="Total assessments"
             />
@@ -909,7 +892,7 @@ const Dashboard = () => {
               title="Complex Cases" 
               value={complexCases?.data?.pagination?.total || 0} 
               icon={FiAlertCircle} 
-              colorClasses="from-red-500 to-red-600"
+              colorClasses="from-primary-800 to-primary-900"
               to="/adl-files"
               subtitle="Requiring attention"
             />
@@ -917,7 +900,7 @@ const Dashboard = () => {
               title="Active Out Patient Intake Record" 
               value={activeADLFiles?.data?.files?.length || 0} 
               icon={FiFolder} 
-              colorClasses="from-purple-500 to-purple-600"
+              colorClasses="from-primary-700 to-primary-800"
               // to="/adl-files"
               subtitle="In progress"
             />
@@ -941,7 +924,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Doughnut
                   data={{
                     labels: (decisionStats?.data?.decisionStats || []).map(item => {
@@ -978,7 +961,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Line 
                   data={visitTrendData} 
                   options={{
@@ -1047,7 +1030,7 @@ const Dashboard = () => {
               >
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {complexCases?.data?.pagination?.total > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-red-50/50 rounded-lg border border-red-200/50">
+                    <div className="flex items-start gap-3 p-3 bg-primary-300/50 rounded-lg border border-primary-200/50">
                       <FiAlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-red-900">
@@ -1060,7 +1043,7 @@ const Dashboard = () => {
                     </div>
                   )}
                   {activeADLFiles?.data?.files?.filter(f => f.file_status === 'created').length > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-yellow-50/50 rounded-lg border border-yellow-200/50">
+                    <div className="flex items-start gap-3 p-3 bg-primary-200/50 rounded-lg border border-primary-200/50">
                       <FiClock className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-yellow-900">
@@ -1134,7 +1117,7 @@ const Dashboard = () => {
   if (isResident) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8">
           {/* Welcome Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -1157,7 +1140,7 @@ const Dashboard = () => {
               title="Total Out Patient Intake Record  Created" 
               value={activeADLFiles?.data?.files?.length || 0} 
               icon={FiFolder} 
-              colorClasses="from-purple-500 to-purple-600"
+              colorClasses="from-primary-700 to-primary-800"
               // to="/adl-files"
               subtitle="Intake records"
             />
@@ -1165,7 +1148,7 @@ const Dashboard = () => {
               title="Pending ADLs" 
               value={complexCases?.data?.pagination?.total || 0} 
               icon={FiAlertCircle} 
-              colorClasses="from-orange-500 to-orange-600"
+              colorClasses="from-primary-500 to-indigo-600"
               to="/adl-files"
               subtitle="Requiring completion"
             />
@@ -1173,7 +1156,7 @@ const Dashboard = () => {
               title="Files Uploaded" 
               value={fileStats?.data?.stats?.total_files || 0} 
               icon={FiUpload} 
-              colorClasses="from-pink-500 to-pink-600"
+              colorClasses="from-primary-500 to-primary-700"
               subtitle="Patient documents"
             />
           </div>
@@ -1189,7 +1172,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Doughnut
                   data={{
                     labels: (decisionStats?.data?.decisionStats || []).map(item => {
@@ -1226,7 +1209,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Bar
                   data={{
                     labels: ['Active', 'Stored', 'Retrieved', 'Archived'],
@@ -1285,7 +1268,7 @@ const Dashboard = () => {
                         description={`Patient: ${proforma.patient_name || 'N/A'}`}
                         time={proforma.created_at ? formatDateTime(proforma.created_at) : 'N/A'}
                         status={proforma.doctor_decision === 'complex_case' ? 'complex' : 'simple'}
-                        color="from-blue-500 to-blue-600"
+                        color="from-primary-500 to-primary-600"
                       />
                     ))}
                     {activeADLFiles?.data?.files?.slice(0, 3).map((file, idx) => (
@@ -1296,7 +1279,7 @@ const Dashboard = () => {
                         description={`Patient: ${file.patient_name || 'N/A'}`}
                         time={file.created_at ? formatDateTime(file.created_at) : 'N/A'}
                         status={file.file_status}
-                        color="from-purple-500 to-purple-600"
+                        color="from-primary-700 to-primary-800"
                       />
                     ))}
                   </>
@@ -1317,7 +1300,7 @@ const Dashboard = () => {
               >
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {complexCases?.data?.pagination?.total > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-red-50/50 rounded-lg border border-red-200/50">
+                    <div className="flex items-start gap-3 p-3 bg-primary-300/50 rounded-lg border border-primary-200/50">
                       <FiAlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-red-900">
@@ -1330,7 +1313,7 @@ const Dashboard = () => {
                     </div>
                   )}
                   {activeADLFiles?.data?.files?.filter(f => f.file_status === 'created').length > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-yellow-50/50 rounded-lg border border-yellow-200/50">
+                    <div className="flex items-start gap-3 p-3 bg-primary-200/50 rounded-lg border border-primary-200/50">
                       <FiClock className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-yellow-900">
@@ -1404,7 +1387,7 @@ const Dashboard = () => {
   if (isMwo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8">
           {/* Welcome Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -1427,7 +1410,7 @@ const Dashboard = () => {
               title="Registered Patients" 
               value={myRecords?.data?.pagination?.total || 0} 
               icon={FiUsers} 
-              colorClasses="from-purple-500 to-purple-600"
+              colorClasses="from-primary-700 to-primary-800"
               to="/patients"
               subtitle="Patient database"
             />
@@ -1435,7 +1418,7 @@ const Dashboard = () => {
               title="Urban Patients" 
               value={outpatientStats?.data?.stats?.urban || 0} 
               icon={FiMapPin} 
-              colorClasses="from-green-500 to-green-600"
+              colorClasses="from-primary-600 to-primary-700"
               to="/patients?locality=urban"
               subtitle="Urban locality"
             />
@@ -1443,7 +1426,7 @@ const Dashboard = () => {
               title="Rural Patients" 
               value={outpatientStats?.data?.stats?.rural || 0} 
               icon={FiMapPin} 
-              colorClasses="from-orange-500 to-orange-600"
+              colorClasses="from-primary-500 to-indigo-600"
               to="/patients?locality=rural"
               subtitle="Rural locality"
             />
@@ -1460,7 +1443,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Doughnut
                   data={{
                     labels: ['Married', 'Unmarried', 'Widow/Widower', 'Divorced', 'Other'],
@@ -1500,7 +1483,7 @@ const Dashboard = () => {
               }
               className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
             >
-              <div className="h-80">
+              <div className="h-64 sm:h-72 md:h-80">
                 <Bar
                   data={{
                     labels: ['Urban', 'Rural'],
@@ -1644,7 +1627,7 @@ const Dashboard = () => {
   // Default fallback
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h2>
           <p className="text-gray-600">Dashboard content is being loaded...</p>

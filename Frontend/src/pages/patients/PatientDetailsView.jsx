@@ -17,8 +17,8 @@ import Button from '../../components/Button';
 import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx-js-style';
 
-import { useGetPrescriptionByIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
-import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApiSlice';
+import { useGetPrescriptionByIdQuery } from '../../features/services/prescriptionServiceApiSlice';
+import { useGetPatientFilesQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import ViewADL from '../adl/ViewADL';
 import ClinicalProformaDetails from '../clinical/ClinicalProformaDetails';
 import PrescriptionView from '../PrescribeMedication/PrescriptionView';

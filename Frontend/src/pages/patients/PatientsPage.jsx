@@ -7,7 +7,7 @@ import {
    FiDownload,  FiClock, FiPrinter,
   FiHeart, FiFileText, FiShield, FiTrendingUp, FiX
 } from 'react-icons/fi';
-import { useGetAllPatientsQuery, useDeletePatientMutation, useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
+import { useGetAllPatientRecordsQuery, useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import { selectCurrentUser, selectCurrentToken } from '../../features/auth/authSlice';
 import { formatPatientsForExport, exportData } from '../../utils/exportUtils';
 import Card from '../../components/Card';
@@ -35,7 +35,7 @@ const PatientsPage = () => {
   // Fetch patients - if searching, fetch more results for client-side filtering
   const fetchLimit = search.trim() ? 100 : limit; // Fetch more when searching to allow client-side filtering
   
-  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
+  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientRecordsQuery({
     page: search.trim() ? 1 : page, // Always fetch page 1 when searching
     limit: fetchLimit,
     search: undefined // Don't send search to backend, we'll filter client-side
@@ -45,17 +45,17 @@ const PatientsPage = () => {
   });
 
   // Client-side filtering by all fields including doctor name
-  const filteredPatients = data?.data?.patients ? (() => {
+  const filteredPatients = data?.data?.records ? (() => {
     if (!search.trim()) {
       // No search - return paginated results
       const startIndex = (page - 1) * limit;
-      return data.data.patients.slice(startIndex, startIndex + limit);
+      return data.data.records.slice(startIndex, startIndex + limit);
     }
 
     const searchLower = search.trim().toLowerCase();
     
     // Filter by all searchable fields including doctor name
-    const filtered = data.data.patients.filter(patient => {
+    const filtered = data.data.records.filter(patient => {
       return (
         patient.name?.toLowerCase().includes(searchLower) ||
         patient.cr_no?.toLowerCase().includes(searchLower) ||
@@ -73,7 +73,7 @@ const PatientsPage = () => {
 
   // Calculate total pages for filtered results
   const totalFiltered = search.trim() 
-    ? (data?.data?.patients?.filter(patient => {
+    ? (data?.data?.records?.filter(patient => {
         const searchLower = search.trim().toLowerCase();
         return (
           patient.name?.toLowerCase().includes(searchLower) ||
@@ -90,7 +90,8 @@ const PatientsPage = () => {
     ? Math.ceil(totalFiltered / limit)
     : (data?.data?.pagination?.pages || 1);
  
-  const [deletePatient] = useDeletePatientMutation();
+  // Note: Delete functionality needs to be implemented in the service
+  // const [deletePatient] = useDeletePatientRecordMutation();
  
 
   // Handle view patient details
@@ -129,7 +130,10 @@ const PatientsPage = () => {
   
     // No browser confirm — directly attempt delete
     try {
-      await deletePatient(id).unwrap();
+      // TODO: Implement delete patient record mutation
+      // await deletePatient(id).unwrap();
+      toast.error('Delete functionality not yet implemented');
+      return;
       toast.success('Patient and all related records deleted successfully');
   
       // RTK Query will automatically refetch when tags are invalidated
@@ -1635,7 +1639,7 @@ const PatientsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-4 sm:space-y-5 md:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8">
         {/* Header Section */}
         {/* Main Content Card */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
@@ -1654,48 +1658,50 @@ const PatientsPage = () => {
           )}
           
           {/* Enhanced Search and Filter Section */}
-          <div className="mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch className="w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+          <div className="mb-4 sm:mb-5 md:mb-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex-1 relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                    <FiSearch className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+                  </div>
+                  <Input
+                    placeholder="Search by CR No, Patient Name, PSY No, Doctor Name, or Doctor Role..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10 sm:pl-12 pr-10 sm:pr-12 h-11 sm:h-12 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md text-sm sm:text-base"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Clear search"
+                    >
+                      <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  )}
                 </div>
-                <Input
-                  placeholder="Search by CR No, Patient Name, PSY No, Doctor Name, or Doctor Role..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Clear search"
+                <div className="flex flex-row gap-2 sm:gap-3 flex-shrink-0">
+                  {!isMWO(user?.role) && (
+                    <Link to="/patients/new" className="flex-shrink-0">
+                      <Button className="bg-gradient-to-r h-11 sm:h-12 px-4 sm:px-5 from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap text-sm sm:text-base">
+                        <FiPlus className="mr-1.5 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline">Add Patient</span>
+                        <span className="sm:hidden">Add</span>
+                      </Button>
+                    </Link>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="h-11 sm:h-12 px-4 sm:px-5 bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                    onClick={handleExport}
+                    disabled={filteredPatients.length === 0 && (!data?.data?.records || data.data.records.length === 0)}
                   >
-                    <FiX className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-              {!isMWO(user?.role) && (
-                <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
-                  <Link to="/patients/new">
-                    <Button className="bg-gradient-to-r h-12 px-5 from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap">
-                      <FiPlus className="mr-2" />
-                      Add Patient
-                    </Button>
-                  </Link>
+                    <FiDownload className="mr-1.5 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline">Export</span>
+                    <span className="sm:hidden">Export</span>
+                  </Button>
                 </div>
-              )}
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="h-12 px-5 bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={handleExport}
-                  disabled={filteredPatients.length === 0 && (!data?.data?.patients || data.data.patients.length === 0)}
-                >
-                  <FiDownload className="mr-2" />
-                  Export
-                </Button>
               </div>
             </div>
           </div>

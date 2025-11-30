@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetADLFileByIdQuery } from '../../features/adl/adlApiSlice';
-import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
-import { useGetPatientFilesQuery } from '../../features/patients/patientFilesApiSlice';
+import { useGetIntakeRecordByIdQuery } from '../../features/services/intakeRecordServiceApiSlice';
+import { useGetPatientRecordByIdQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
+import { useGetPatientFilesQuery } from '../../features/services/patientCardAndRecordServiceApiSlice';
 import Card from '../../components/Card';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import FilePreview from '../../components/FilePreview';
@@ -37,11 +37,11 @@ const DisplayField = ({ label, value, icon, className = '', rows }) => {
 const ViewADL = ( {adlFiles} ) => {
   const navigate = useNavigate();
   
-  // const { data: adlData, isLoading: isLoadingADL } = useGetADLFileByIdQuery(id, { skip: !id });
+  // const { data: adlData, isLoading: isLoadingADL } = useGetIntakeRecordByIdQuery(id, { skip: !id });
   // const adlFile = adlData?.data?.adlFile || adlData?.data?.adl_file || adlData?.data?.file || adlData?.data;
   const adlFile = adlFiles;
   const patientId = adlFiles?.patient_id;
-  const { data: patientData, isLoading: isLoadingPatient } = useGetPatientByIdQuery(patientId, { skip: !patientId });
+  const { data: patientData, isLoading: isLoadingPatient } = useGetPatientRecordByIdQuery(patientId, { skip: !patientId });
   const patient = patientData?.data?.patient;
   
   // Fetch patient files for preview

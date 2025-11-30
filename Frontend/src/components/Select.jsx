@@ -161,7 +161,7 @@ const Select = ({
       {label && (
         <label
           htmlFor={name}
-          className="block text-sm font-medium text-gray-700 mb-2"
+          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
@@ -197,7 +197,7 @@ const Select = ({
           disabled={disabled}
           title={selectedOption ? selectedOption.label : placeholder}
           className={`
-            w-full px-3 py-2 pr-10
+            w-full px-3 py-2 pr-8 sm:pr-10 text-sm sm:text-base
             backdrop-blur-md bg-white/60 border border-white/40 rounded-lg shadow-sm
             text-left font-medium
             transition-all duration-300 ease-in-out

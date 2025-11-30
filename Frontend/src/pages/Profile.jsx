@@ -12,7 +12,7 @@ import {
   useChangePasswordMutation,
   useEnable2FAMutation,
   useDisable2FAMutation,
-} from '../features/auth/authApiSlice';
+} from '../features/services/userServiceApiSlice';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';

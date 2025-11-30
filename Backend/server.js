@@ -1,329 +1,355 @@
+#!/usr/bin/env node
+
+/**
+ * Main Gateway Server - Starts All Services + Gateway
+ * 
+ * This is a single entry point that:
+ * 1. Starts all 5 microservices concurrently
+ * 2. Starts the API gateway server that proxies all requests
+ * 
+ * Services:
+ * - user-service (Port 3001)
+ * - out-patients-card-and-out-patient-record-service (Port 3002)
+ * - adult-walk-in-clinical-performa-service (Port 3003)
+ * - out-patient-intake-record-service (Port 3004)
+ * - prescription-service (Port 3005)
+ * 
+ * Run: node server.js
+ * Or: npm start
+ */
+
+require('dotenv').config();
 const express = require('express');
+const proxy = require('express-http-proxy');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
 const morgan = require('morgan');
-const swaggerUi = require('swagger-ui-express');
-const cookieParser = require('cookie-parser');
-require('dotenv').config();
-
-// Import configurations
-const { swaggerSpecs, swaggerUiOptions } = require('./config/swagger');
-
-// Import routes
-const userRoutes = require('./routes/userRoutes');
-const patientRoutes = require('./routes/patientRoutes');
-const patientFileRoutes = require('./routes/patientFileRoutes');
-const clinicalRoutes = require('./routes/clinicalRoutes');
-const adlRoutes = require('./routes/adlRoutes');
-const prescriptionRoutes = require('./routes/prescriptionRoutes');
-const sessionRoutes = require('./routes/sessionRoutes');
-
-const app = express();
-const PORT = process.env.PORT || 8000;
-
-// Security middleware - less restrictive for Swagger UI
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      connectSrc: ["'self'", "http:", "https:"],
-    },
-  },
-  crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: false,
-  hsts: false, // Disable HSTS for HTTP connections
-}));
-
-// CORS configuration
-// app.use(cors({
-//   origin: process.env.NODE_ENV === 'production'
-//     ? ['https://emrs.pgimer.ac.in']
-//     : ['http://72.60.206.223:3000', 'http://72.60.206.223:2026', 'http://72.60.206.223:2026'],
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-// }));
-
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? [
-        'https://emrs.pgimer.ac.in',
-        `http://122.186.76.102:3000`,
-        `http://122.186.76.102:8000`,
-        `http://122.186.76.102:8001`,
-        `http://122.186.76.102:8002`,
-        `http://122.186.76.102:2026`,
-      ]
-    : [
-        `http://122.186.76.102:3000`,
-        `http://122.186.76.102:8000`,
-        `http://122.186.76.102:8001`,
-        `http://122.186.76.102:8002`,
-        `http://122.186.76.102:2026`,
-        'http://localhost:3000',
-        'http://localhost:8000',
-        'http://localhost:8001',
-        'http://localhost:8002',
-        'http://localhost:2026',
-      ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
-
-// Rate limiting - DISABLED for unrestricted API access
-// Uncomment and configure below if you need to enable rate limiting in production
-/*
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limit each IP to 1000 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use('/api/', limiter);
-*/
-
-// Compression middleware
-app.use(compression());
-
-// HTTP request logging middleware
-app.use(morgan('combined', {
-  skip: (req, res) => res.statusCode < 400
-}));
-
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser()); // Parse cookies for refresh tokens
-
-// Serve uploaded files statically
+const { spawn } = require('child_process');
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const fs = require('fs');
 
-// Request logging middleware
-app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`${timestamp} - ${req.method} ${req.path} - IP: ${req.ip}`);
-  next();
-});
+// Colors for console output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  bgBlue: '\x1b[44m',
+  bgGreen: '\x1b[42m',
+};
+
+// Service definitions
+const services = [
+  {
+    name: 'user-service',
+    port: process.env.USER_SERVICE_PORT || 3001,
+    path: path.join(__dirname, 'services', 'user-service'),
+    color: colors.green
+  },
+  {
+    name: 'out-patients-card-and-out-patient-record-service',
+    port: process.env.OUT_PATIENTS_CARD_AND_RECORD_SERVICE_PORT || 3002,
+    path: path.join(__dirname, 'services', 'out-patients-card-and-out-patient-record-service'),
+    color: colors.blue
+  },
+  {
+    name: 'adult-walk-in-clinical-performa-service',
+    port: process.env.ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_PORT || 3003,
+    path: path.join(__dirname, 'services', 'adult-walk-in-clinical-performa-service'),
+    color: colors.cyan
+  },
+  {
+    name: 'out-patient-intake-record-service',
+    port: process.env.OUT_PATIENT_INTAKE_RECORD_SERVICE_PORT || 3004,
+    path: path.join(__dirname, 'services', 'out-patient-intake-record-service'),
+    color: colors.magenta
+  },
+  {
+    name: 'prescription-service',
+    port: process.env.PRESCRIPTION_SERVICE_PORT || 3005,
+    path: path.join(__dirname, 'services', 'prescription-service'),
+    color: colors.yellow
+  }
+];
+
+// Service URLs for proxy
+const SERVICE_URLS = {
+  // Service URLs used in route proxies
+  user: process.env.USER_SERVICE_URL || 'http://localhost:3001',
+  outPatientsCardAndRecord: process.env.OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL || 'http://localhost:3002',
+  adultWalkInClinical: process.env.ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL || 'http://localhost:3003',
+  outPatientIntakeRecord: process.env.OUT_PATIENT_INTAKE_RECORD_SERVICE_URL || 'http://localhost:3004',
+  prescription: process.env.PRESCRIPTION_SERVICE_URL || 'http://localhost:3005'
+};
+
+// Store service processes
+const serviceProcesses = [];
+
+// Function to start all microservices
+function startAllServices() {
+  console.log(`\n${colors.bright}${colors.cyan}╔════════════════════════════════════════════════════════════════════════╗${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}║${colors.reset}  ${colors.bright}${colors.yellow}🚀 Starting PGIMER EMRS Microservices${colors.reset}${colors.bright}${colors.cyan}                                    ║${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}╚════════════════════════════════════════════════════════════════════════╝${colors.reset}\n`);
+
+  services.forEach((service, index) => {
+    const packageJsonPath = path.join(service.path, 'package.json');
+    
+    if (!fs.existsSync(packageJsonPath)) {
+      console.log(`${colors.yellow}⚠️  Skipping ${service.name} - package.json not found${colors.reset}`);
+      return;
+    }
+
+    const progress = `${colors.dim}[${index + 1}/${services.length}]${colors.reset}`;
+    console.log(`${progress} ${colors.blue}${colors.bright}Starting${colors.reset} ${service.color}${service.name}${colors.reset} ${colors.dim}on port ${service.port}...${colors.reset}`);
+
+    const child = spawn('node', ['src/index.js'], {
+      cwd: service.path,
+      env: {
+        ...process.env,
+        NODE_ENV: process.env.NODE_ENV || 'development',
+        PORT: service.port
+      },
+      stdio: 'pipe',
+      shell: true
+    });
+
+    // Handle service output - only show important messages
+    child.stdout.on('data', (data) => {
+      const output = data.toString().trim();
+      // Only show service startup messages, filter out other noise
+      if (output && (output.includes('🚀') || output.includes('running on port') || output.includes('Service running'))) {
+        const cleanOutput = output.replace(/\[.*?\]/g, '').trim();
+        console.log(`  ${service.color}${colors.bright}✓${colors.reset} ${service.color}${cleanOutput}${colors.reset}`);
+      }
+    });
+
+    child.stderr.on('data', (data) => {
+      const output = data.toString().trim();
+      if (output && !output.includes('DeprecationWarning') && !output.includes('ExperimentalWarning')) {
+        console.error(`  ${colors.red}✗${colors.reset} ${colors.red}[${service.name}] ${output}${colors.reset}`);
+      }
+    });
+
+    child.on('error', (error) => {
+      console.error(`  ${colors.red}✗${colors.reset} ${colors.red}Error starting ${service.name}: ${error.message}${colors.reset}`);
+    });
+
+    child.on('exit', (code) => {
+      if (code !== 0 && code !== null) {
+        console.log(`  ${colors.red}✗${colors.reset} ${colors.red}${service.name} exited with code ${code}${colors.reset}`);
+      }
+    });
+
+    serviceProcesses.push({ name: service.name, process: child });
+  });
+
+  // Wait a bit for services to start
+  console.log(`\n${colors.green}${colors.bright}✅ All services initialized!${colors.reset} ${colors.dim}Waiting for services to be ready...${colors.reset}\n`);
+}
+
+// Setup Express Gateway
+const app = express();
+const GATEWAY_PORT = process.env.GATEWAY_PORT || 5000;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  credentials: true
+}));
+app.use(morgan('combined'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'EMRS PGIMER API is running',
+    service: 'api-gateway',
+    status: 'running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
+    services: services.map(s => ({ name: s.name, port: s.port }))
   });
 });
 
-// Middleware to prevent HTTPS conversion for Swagger UI
-app.use('/api-docs', (req, res, next) => {
-  // Remove security headers that might force HTTPS
-  res.removeHeader('Strict-Transport-Security');
-  res.removeHeader('Content-Security-Policy');
-  res.removeHeader('X-Content-Type-Options');
-  res.removeHeader('X-Frame-Options');
-  res.removeHeader('X-XSS-Protection');
-  res.removeHeader('Cross-Origin-Opener-Policy');
-  res.removeHeader('Origin-Agent-Cluster');
-  
-  // Set headers to allow mixed content and prevent HTTPS conversion
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  res.setHeader('Referrer-Policy', 'no-referrer');
-  
-  // Override any HTTPS redirects
-  if (req.headers['x-forwarded-proto'] === 'https') {
-    req.headers['x-forwarded-proto'] = 'http';
-  }
-  
-  next();
-});
+// Proxy configuration function
+const createProxy = (serviceUrl, serviceName) => {
+  return proxy(serviceUrl, {
+    proxyReqPathResolver: (req) => {
+      return req.url;
+    },
+    proxyErrorHandler: (err, res, next) => {
+      console.error(`[${serviceName}] Proxy error:`, err.message);
+      res.status(503).json({
+        success: false,
+        message: `${serviceName} service is unavailable`,
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    },
+    timeout: 30000,
+    limit: '50mb'
+  });
+};
 
-// API Documentation
-app.get('/api-docs/swagger.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpecs);
-});
-
-// Favicon route to prevent 404 error
-app.get('/favicon.ico', (req, res) => {
-  res.status(204).end(); // No content, but no error
-});
-
-// Serve Swagger UI with proper configuration
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, swaggerUiOptions));
-
-// API Routes
-app.use('/api/users', userRoutes);
-app.use('/api/patients', patientRoutes);
-app.use('/api/patient-files', patientFileRoutes);
-app.use('/api/clinical-proformas', clinicalRoutes);
-app.use('/api/adl-files', adlRoutes);
-app.use('/api/prescriptions', prescriptionRoutes);
-app.use('/api/session', sessionRoutes);
+// Route proxies
+app.use('/api/users', createProxy(SERVICE_URLS.user, 'user-service'));
+app.use('/api/sessions', createProxy(SERVICE_URLS.user, 'user-service')); // Sessions are now part of user-service
+app.use('/api/session', createProxy(SERVICE_URLS.user, 'user-service')); // Legacy route
+app.use('/api/patients', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
+app.use('/api/patient-cards', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
+app.use('/api/patient-files', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
+app.use('/api/out-patient-records', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
+app.use('/api/clinical-proformas', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa-service'));
+app.use('/api/clinical-options', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa-service')); // Options are now part of clinical service
+app.use('/api/outpatient-intake-records', createProxy(SERVICE_URLS.outPatientIntakeRecord, 'out-patient-intake-record-service'));
+app.use('/api/prescriptions', createProxy(SERVICE_URLS.prescription, 'prescription-service'));
 
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to EMRS PGIMER API',
-    version: '1.0.0',
-    documentation: '/api-docs',
-    health: '/health',
+    message: 'PGIMER EMRS Microservices API Gateway',
+    version: '2.0.0',
+    services: [
+      {
+        name: 'user-service',
+        port: 3001,
+        endpoints: ['/api/users', '/api/sessions']
+      },
+      {
+        name: 'out-patients-card-and-out-patient-record-service',
+        port: 3002,
+        endpoints: ['/api/patients', '/api/patient-cards', '/api/patient-files', '/api/out-patient-records']
+      },
+      {
+        name: 'adult-walk-in-clinical-performa-service',
+        port: 3003,
+        endpoints: ['/api/clinical-proformas', '/api/clinical-options']
+      },
+      {
+        name: 'out-patient-intake-record-service',
+        port: 3004,
+        endpoints: ['/api/outpatient-intake-records']
+      },
+      {
+        name: 'prescription-service',
+        port: 3005,
+        endpoints: ['/api/prescriptions']
+      }
+    ],
     endpoints: {
       users: '/api/users',
+      sessions: '/api/sessions',
       patients: '/api/patients',
+      patientCards: '/api/patient-cards',
+      patientFiles: '/api/patient-files',
+      outPatientRecords: '/api/out-patient-records',
       clinicalProformas: '/api/clinical-proformas',
-      adlFiles: '/api/adl-files',
+      clinicalOptions: '/api/clinical-options',
+      outpatientIntakeRecords: '/api/outpatient-intake-records',
       prescriptions: '/api/prescriptions',
+      health: '/health'
     }
   });
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route ${req.originalUrl} not found`,
-    availableRoutes: [
-      'GET /',
-      'GET /health',
-      'GET /api-docs',
-      'POST /api/users/register',
-      'POST /api/users/login',
-      'GET /api/users/profile',
-      'GET /api/patients',
-      'POST /api/patients',
-      'GET /api/outpatient-records',
-      'POST /api/outpatient-records',
-      'GET /api/clinical-proformas',
-      'POST /api/clinical-proformas',
-      'GET /api/adl-files',
-      'POST /api/adl-files',
-      'GET /api/prescriptions',
-      'POST /api/prescriptions',
-    ]
+    message: 'Route not found',
+    path: req.path
   });
 });
 
-// Global error handler
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('Global error handler:', err);
-
-  // Handle specific error types
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation Error',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Invalid input data'
-    });
-  }
-
-  if (err.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid ID format',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Invalid ID'
-    });
-  }
-
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid token',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Authentication failed'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Token expired',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Please login again'
-    });
-  }
-
-  // Handle database connection errors
-  if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-    return res.status(503).json({
-      success: false,
-      message: 'Database connection failed',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Service temporarily unavailable'
-    });
-  }
-
-  // Default error response
+  console.error('Gateway error:', err);
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.stack : 'Something went wrong'
+    message: err.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
+  console.log(`\n${colors.yellow}🛑 Shutting down...${colors.reset}`);
+  
+  // Kill all service processes
+  serviceProcesses.forEach(({ name, process }) => {
+    console.log(`${colors.yellow}Stopping ${name}...${colors.reset}`);
+    process.kill();
+  });
+  
+  // Exit
   process.exit(0);
 });
 
-// Start server with port fallback
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-🚀 EMRS PGIMER API Server is running!
-📍 Port: ${PORT}
-🌍 Environment: ${process.env.NODE_ENV || 'development'}
-📚 API Documentation: http://localhost:${PORT}/api-docs
-🔍 Health Check: http://localhost:${PORT}/health
-🏥 Endpoints:
-   - Users: http://localhost:${PORT}/api/users
-   - Patients: http://localhost:${PORT}/api/patients
-   - Clinical Proformas: http://localhost:${PORT}/api/clinical-proformas
-   - Out Patient Intake Record: http://localhost:${PORT}/api/adl-files
-   - Prescriptions: http://localhost:${PORT}/api/prescriptions
-  `);
+process.on('SIGTERM', () => {
+  console.log(`\n${colors.yellow}🛑 Shutting down...${colors.reset}`);
+  
+  serviceProcesses.forEach(({ name, process }) => {
+    process.kill();
+  });
+  
+  process.exit(0);
 });
 
-// Handle port already in use error
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`
-❌ Port ${PORT} is already in use!
+// Start everything
+startAllServices();
 
-🔧 Solutions:
-1. Kill the process using port ${PORT}:
-   npm run kill-port
-
-2. Or manually kill the process:
-   Windows: netstat -ano | findstr :${PORT}
-   Linux/Mac: lsof -ti:${PORT} | xargs kill -9
-
-3. Or change the PORT in your .env file to a different port
-   PORT=5001
-
-4. Or find and stop the other server manually
-    `);
-  } else {
-    console.error('❌ Server error:', error);
-  }
-  process.exit(1);
-});
+// Start gateway server after a delay
+let gatewayStarted = false;
+setTimeout(() => {
+  if (gatewayStarted) return; // Prevent multiple starts
+  gatewayStarted = true;
+  
+  app.listen(GATEWAY_PORT, '0.0.0.0', () => {
+    // Header
+    console.log(`\n${colors.bgBlue}${colors.white}${colors.bright}`);
+    console.log('╔════════════════════════════════════════════════════════════════════════╗');
+    console.log('║                                                                        ║');
+    console.log('║              🚀  PGIMER EMRS - API GATEWAY SERVER  🚀                  ║');
+    console.log('║                                                                        ║');
+    console.log('╚════════════════════════════════════════════════════════════════════════╝');
+    console.log(`${colors.reset}\n`);
+    
+    // Server Info
+    console.log(`${colors.cyan}${colors.bright}📡 Server Information${colors.reset}`);
+    console.log(`${colors.dim}${'─'.repeat(64)}${colors.reset}`);
+    console.log(`  ${colors.green}✓${colors.reset} Port:        ${colors.bright}${GATEWAY_PORT}${colors.reset}`);
+    console.log(`  ${colors.green}✓${colors.reset} Environment:  ${colors.bright}${process.env.NODE_ENV || 'development'}${colors.reset}`);
+    console.log(`  ${colors.green}✓${colors.reset} Status:       ${colors.green}${colors.bright}Running${colors.reset}\n`);
+    
+    // Services Status
+    console.log(`${colors.cyan}${colors.bright}🔧 Microservices${colors.reset}`);
+    console.log(`${colors.dim}${'─'.repeat(64)}${colors.reset}`);
+    services.forEach((service, index) => {
+      const status = `${colors.green}●${colors.reset}`;
+      const name = service.name.padEnd(45);
+      const url = `http://localhost:${service.port}`;
+      console.log(`  ${status} ${service.color}${name}${colors.reset} ${colors.dim}${url}${colors.reset}`);
+    });
+    console.log('');
+    
+    // API Endpoints
+    console.log(`${colors.cyan}${colors.bright}🌐 API Endpoints${colors.reset}`);
+    console.log(`${colors.dim}${'─'.repeat(64)}${colors.reset}`);
+    console.log(`  ${colors.yellow}→${colors.reset} Gateway:     ${colors.bright}http://localhost:${GATEWAY_PORT}${colors.reset}`);
+    console.log(`  ${colors.yellow}→${colors.reset} Health Check: ${colors.bright}http://localhost:${GATEWAY_PORT}/health${colors.reset}`);
+    console.log(`  ${colors.yellow}→${colors.reset} API Docs:     ${colors.bright}http://localhost:${GATEWAY_PORT}/api${colors.reset}\n`);
+    
+    // Footer
+    console.log(`${colors.dim}${'─'.repeat(64)}${colors.reset}`);
+    console.log(`${colors.green}${colors.bright}✅ All services are running and ready to accept requests!${colors.reset}\n`);
+  });
+}, 3000); // Wait 3 seconds for services to initialize
 
 module.exports = app;

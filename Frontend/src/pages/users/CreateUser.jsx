@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiUser, FiMail, FiShield, FiPhone, FiLock } from 'react-icons/fi';
-import { useCreateUserMutation, useUpdateUserMutation } from '../../features/users/usersApiSlice';
+import { useRegisterMutation, useUpdateUserByIdMutation } from '../../features/services/userServiceApiSlice';
 import Card from '../../components/Card';
 import { IconInput } from '../../components/IconInput';
 import Select from '../../components/Select';
@@ -11,8 +11,8 @@ import { USER_ROLES } from '../../utils/constants';
 
 const CreateUser = ({ editMode = false, existingUser = null, userId = null }) => {
   const navigate = useNavigate();
-  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const [createUser, { isLoading: isCreating }] = useRegisterMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserByIdMutation();
   const isLoading = isCreating || isUpdating;
 
   const [formData, setFormData] = useState({
