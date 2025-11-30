@@ -32,7 +32,7 @@ class UserController {
     }
   }
 
-  static async login(req, res) {
+  static async login(req, res, next) {
     try {
       const { email, password } = req.body;
       
@@ -118,11 +118,22 @@ class UserController {
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Login failed',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+      
+      // Handle database connection errors specifically
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || 
+          (error.constructor && error.constructor.name === 'AggregateError' && 
+           error.errors && error.errors.some(e => e.code === 'ECONNREFUSED'))) {
+        return res.status(503).json({
+          success: false,
+          message: 'Database connection failed. Please ensure PostgreSQL is running.',
+          error: process.env.NODE_ENV === 'development' 
+            ? 'PostgreSQL is not running. Start it with: docker-compose up -d postgres (if using Docker) or start your local PostgreSQL service.'
+            : 'Service temporarily unavailable'
+        });
+      }
+      
+      // Let other errors be handled by the error handler middleware
+      next(error);
     }
   }
 

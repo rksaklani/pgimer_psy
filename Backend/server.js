@@ -160,7 +160,7 @@ const GATEWAY_PORT = process.env.GATEWAY_PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000',' http://localhost:8001'],
   credentials: true
 }));
 app.use(morgan('combined'));
@@ -179,10 +179,11 @@ app.get('/health', (req, res) => {
 });
 
 // Proxy configuration function
-const createProxy = (serviceUrl, serviceName) => {
+const createProxy = (serviceUrl, serviceName, pathPrefix = '') => {
   return proxy(serviceUrl, {
     proxyReqPathResolver: (req) => {
-      return req.url;
+      // Preserve the full path including the prefix
+      return pathPrefix + req.url;
     },
     proxyErrorHandler: (err, res, next) => {
       console.error(`[${serviceName}] Proxy error:`, err.message);
@@ -198,17 +199,17 @@ const createProxy = (serviceUrl, serviceName) => {
 };
 
 // Route proxies
-app.use('/api/users', createProxy(SERVICE_URLS.user, 'user'));
-app.use('/api/sessions', createProxy(SERVICE_URLS.user, 'user')); // Sessions are now part of user
-app.use('/api/session', createProxy(SERVICE_URLS.user, 'user')); // Legacy route
-app.use('/api/patients', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
-app.use('/api/patient-cards', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
-app.use('/api/patient-files', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
-app.use('/api/out-patient-records', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
-app.use('/api/clinical-proformas', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa'));
-app.use('/api/clinical-options', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa')); // Options are now part of clinical service
-app.use('/api/outpatient-intake-records', createProxy(SERVICE_URLS.outPatientIntakeRecord, 'out-patient-intake-record'));
-app.use('/api/prescriptions', createProxy(SERVICE_URLS.prescription, 'prescription'));
+app.use('/api/users', createProxy(SERVICE_URLS.user, 'user', '/api/users'));
+app.use('/api/sessions', createProxy(SERVICE_URLS.user, 'user', '/api/sessions')); // Sessions are now part of user
+app.use('/api/session', createProxy(SERVICE_URLS.user, 'user', '/api/session')); // Legacy route
+app.use('/api/patients', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record', '/api/patients'));
+app.use('/api/patient-cards', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record', '/api/patient-cards'));
+app.use('/api/patient-files', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record', '/api/patient-files'));
+app.use('/api/out-patient-records', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record', '/api/out-patient-records'));
+app.use('/api/clinical-proformas', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa', '/api/clinical-proformas'));
+app.use('/api/clinical-options', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa', '/api/clinical-options')); // Options are now part of clinical service
+app.use('/api/outpatient-intake-records', createProxy(SERVICE_URLS.outPatientIntakeRecord, 'out-patient-intake-record', '/api/outpatient-intake-records'));
+app.use('/api/prescriptions', createProxy(SERVICE_URLS.prescription, 'prescription', '/api/prescriptions'));
 
 // Root endpoint
 app.get('/', (req, res) => {
