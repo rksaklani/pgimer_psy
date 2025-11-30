@@ -1,6 +1,6 @@
 /**
- * user-service API Slice
- * Matches: Backend-Microservices/services/user-service
+ * user API Slice
+ * Matches: Backend-Microservices/services/user
  * Port: 3001
  * Handles: Users, Authentication, Sessions
  */

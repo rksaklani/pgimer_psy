@@ -1,6 +1,6 @@
 /**
- * prescription-service API Slice
- * Matches: Backend-Microservices/services/prescription-service
+ * prescription API Slice
+ * Matches: Backend-Microservices/services/prescription
  * Port: 3005
  * Handles: Prescriptions
  */

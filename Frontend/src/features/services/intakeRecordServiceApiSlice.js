@@ -1,6 +1,6 @@
 /**
- * out-patient-intake-record-service API Slice
- * Matches: Backend-Microservices/services/out-patient-intake-record-service
+ * out-patient-intake-record API Slice
+ * Matches: Backend-Microservices/services/out-patient-intake-record
  * Port: 3004
  * Handles: Outpatient Intake Records
  */

@@ -1,6 +1,6 @@
 /**
- * out-patients-card-and-out-patient-record-service API Slice
- * Matches: Backend-Microservices/services/out-patients-card-and-out-patient-record-service
+ * out-patients-card-and-out-patient-record API Slice
+ * Matches: Backend-Microservices/services/out-patients-card-and-out-patient-record
  * Port: 3002
  * Handles: Patient Cards, Patient Records, Patient Files
  */

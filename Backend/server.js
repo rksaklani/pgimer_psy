@@ -8,11 +8,11 @@
  * 2. Starts the API gateway server that proxies all requests
  * 
  * Services:
- * - user-service (Port 3001)
- * - out-patients-card-and-out-patient-record-service (Port 3002)
- * - adult-walk-in-clinical-performa-service (Port 3003)
- * - out-patient-intake-record-service (Port 3004)
- * - prescription-service (Port 3005)
+ * - user (Port 3001)
+ * - out-patients-card-and-out-patient-record (Port 3002)
+ * - adult-walk-in-clinical-performa (Port 3003)
+ * - out-patient-intake-record (Port 3004)
+ * - prescription (Port 3005)
  * 
  * Run: node server.js
  * Or: npm start
@@ -47,33 +47,33 @@ const colors = {
 // Service definitions
 const services = [
   {
-    name: 'user-service',
+    name: 'user',
     port: process.env.USER_SERVICE_PORT || 3001,
-    path: path.join(__dirname, 'services', 'user-service'),
+    path: path.join(__dirname, 'services', 'user'),
     color: colors.green
   },
   {
-    name: 'out-patients-card-and-out-patient-record-service',
+    name: 'out-patients-card-and-out-patient-record',
     port: process.env.OUT_PATIENTS_CARD_AND_RECORD_SERVICE_PORT || 3002,
-    path: path.join(__dirname, 'services', 'out-patients-card-and-out-patient-record-service'),
+    path: path.join(__dirname, 'services', 'out-patients-card-and-out-patient-record'),
     color: colors.blue
   },
   {
-    name: 'adult-walk-in-clinical-performa-service',
+    name: 'adult-walk-in-clinical-performa',
     port: process.env.ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_PORT || 3003,
-    path: path.join(__dirname, 'services', 'adult-walk-in-clinical-performa-service'),
+    path: path.join(__dirname, 'services', 'adult-walk-in-clinical-performa'),
     color: colors.cyan
   },
   {
-    name: 'out-patient-intake-record-service',
+    name: 'out-patient-intake-record',
     port: process.env.OUT_PATIENT_INTAKE_RECORD_SERVICE_PORT || 3004,
-    path: path.join(__dirname, 'services', 'out-patient-intake-record-service'),
+    path: path.join(__dirname, 'services', 'out-patient-intake-record'),
     color: colors.magenta
   },
   {
-    name: 'prescription-service',
+    name: 'prescription',
     port: process.env.PRESCRIPTION_SERVICE_PORT || 3005,
-    path: path.join(__dirname, 'services', 'prescription-service'),
+    path: path.join(__dirname, 'services', 'prescription'),
     color: colors.yellow
   }
 ];
@@ -198,17 +198,17 @@ const createProxy = (serviceUrl, serviceName) => {
 };
 
 // Route proxies
-app.use('/api/users', createProxy(SERVICE_URLS.user, 'user-service'));
-app.use('/api/sessions', createProxy(SERVICE_URLS.user, 'user-service')); // Sessions are now part of user-service
-app.use('/api/session', createProxy(SERVICE_URLS.user, 'user-service')); // Legacy route
-app.use('/api/patients', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
-app.use('/api/patient-cards', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
-app.use('/api/patient-files', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
-app.use('/api/out-patient-records', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record-service'));
-app.use('/api/clinical-proformas', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa-service'));
-app.use('/api/clinical-options', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa-service')); // Options are now part of clinical service
-app.use('/api/outpatient-intake-records', createProxy(SERVICE_URLS.outPatientIntakeRecord, 'out-patient-intake-record-service'));
-app.use('/api/prescriptions', createProxy(SERVICE_URLS.prescription, 'prescription-service'));
+app.use('/api/users', createProxy(SERVICE_URLS.user, 'user'));
+app.use('/api/sessions', createProxy(SERVICE_URLS.user, 'user')); // Sessions are now part of user
+app.use('/api/session', createProxy(SERVICE_URLS.user, 'user')); // Legacy route
+app.use('/api/patients', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
+app.use('/api/patient-cards', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
+app.use('/api/patient-files', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
+app.use('/api/out-patient-records', createProxy(SERVICE_URLS.outPatientsCardAndRecord, 'out-patients-card-and-out-patient-record'));
+app.use('/api/clinical-proformas', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa'));
+app.use('/api/clinical-options', createProxy(SERVICE_URLS.adultWalkInClinical, 'adult-walk-in-clinical-performa')); // Options are now part of clinical service
+app.use('/api/outpatient-intake-records', createProxy(SERVICE_URLS.outPatientIntakeRecord, 'out-patient-intake-record'));
+app.use('/api/prescriptions', createProxy(SERVICE_URLS.prescription, 'prescription'));
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -218,27 +218,27 @@ app.get('/', (req, res) => {
     version: '2.0.0',
     services: [
       {
-        name: 'user-service',
+        name: 'user',
         port: 3001,
         endpoints: ['/api/users', '/api/sessions']
       },
       {
-        name: 'out-patients-card-and-out-patient-record-service',
+        name: 'out-patients-card-and-out-patient-record',
         port: 3002,
         endpoints: ['/api/patients', '/api/patient-cards', '/api/patient-files', '/api/out-patient-records']
       },
       {
-        name: 'adult-walk-in-clinical-performa-service',
+        name: 'adult-walk-in-clinical-performa',
         port: 3003,
         endpoints: ['/api/clinical-proformas', '/api/clinical-options']
       },
       {
-        name: 'out-patient-intake-record-service',
+        name: 'out-patient-intake-record',
         port: 3004,
         endpoints: ['/api/outpatient-intake-records']
       },
       {
-        name: 'prescription-service',
+        name: 'prescription',
         port: 3005,
         endpoints: ['/api/prescriptions']
       }
@@ -254,6 +254,72 @@ app.get('/', (req, res) => {
       clinicalOptions: '/api/clinical-options',
       outpatientIntakeRecords: '/api/outpatient-intake-records',
       prescriptions: '/api/prescriptions',
+      health: '/health'
+    }
+  });
+});
+
+// API Documentation endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'PGIMER EMRS Microservices API Documentation',
+    version: '2.0.0',
+    gateway: {
+      baseUrl: `http://localhost:${GATEWAY_PORT}`,
+      healthCheck: `http://localhost:${GATEWAY_PORT}/health`
+    },
+    services: [
+      {
+        name: 'user',
+        port: 3001,
+        url: SERVICE_URLS.user,
+        endpoints: [
+          { path: '/api/users', description: 'User management endpoints' },
+          { path: '/api/sessions', description: 'Session management endpoints' },
+          { path: '/api/session', description: 'Legacy session endpoint' }
+        ]
+      },
+      {
+        name: 'out-patients-card-and-out-patient-record',
+        port: 3002,
+        url: SERVICE_URLS.outPatientsCardAndRecord,
+        endpoints: [
+          { path: '/api/patients', description: 'Patient management endpoints' },
+          { path: '/api/patient-cards', description: 'Patient card endpoints' },
+          { path: '/api/patient-files', description: 'Patient file endpoints' },
+          { path: '/api/out-patient-records', description: 'Out-patient record endpoints' }
+        ]
+      },
+      {
+        name: 'adult-walk-in-clinical-performa',
+        port: 3003,
+        url: SERVICE_URLS.adultWalkInClinical,
+        endpoints: [
+          { path: '/api/clinical-proformas', description: 'Clinical proforma endpoints' },
+          { path: '/api/clinical-options', description: 'Clinical options endpoints' }
+        ]
+      },
+      {
+        name: 'out-patient-intake-record',
+        port: 3004,
+        url: SERVICE_URLS.outPatientIntakeRecord,
+        endpoints: [
+          { path: '/api/outpatient-intake-records', description: 'Out-patient intake record endpoints' }
+        ]
+      },
+      {
+        name: 'prescription',
+        port: 3005,
+        url: SERVICE_URLS.prescription,
+        endpoints: [
+          { path: '/api/prescriptions', description: 'Prescription management endpoints' }
+        ]
+      }
+    ],
+    commonEndpoints: {
+      root: '/',
+      apiDocs: '/api',
       health: '/health'
     }
   });

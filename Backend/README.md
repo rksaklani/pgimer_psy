@@ -10,7 +10,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
 
 ### Microservices
 
-1. **user-service** (Port 3001)
+1. **user** (Port 3001)
    - User management and authentication
    - JWT token generation and refresh
    - 2FA (Two-Factor Authentication)
@@ -18,7 +18,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
    - User roles and permissions
    - Session management (integrated from session-service)
 
-2. **out-patients-card-and-out-patient-record-service** (Port 3002)
+2. **out-patients-card-and-out-patient-record** (Port 3002)
    - Patient card management
    - Out-patient record management
    - Patient registration and management
@@ -28,7 +28,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
    - Single file upload for both patient cards and out-patient records
    - File management (integrated from patient-file-upload-service)
 
-3. **adult-walk-in-clinical-performa-service** (Port 3003)
+3. **adult-walk-in-clinical-performa** (Port 3003)
    - Adult walk-in clinical performa creation and management
    - Walk-in clinical assessments
    - Simple and complex case handling
@@ -37,7 +37,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
    - Dynamic dropdown options
    - Options CRUD operations
 
-4. **out-patient-intake-record-service** (Port 3004)
+4. **out-patient-intake-record** (Port 3004)
    - Outpatient intake record management
    - ADL (Activities of Daily Living) file management
    - Complex case detailed workups
@@ -45,7 +45,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
    - File uploads for intake records
    - ADL file statistics
 
-5. **prescription-service** (Port 3005)
+5. **prescription** (Port 3005)
    - Prescription creation and management
    - Medication management
    - Prescription history
@@ -76,7 +76,7 @@ This is a microservices-based backend architecture for the PGIMER EMRS system. T
 ```
 Backend-Microservices/
 ├── services/
-│   ├── user-service/
+│   ├── user/
 │   │   ├── src/
 │   │   │   ├── controllers/
 │   │   │   ├── models/
@@ -84,10 +84,10 @@ Backend-Microservices/
 │   │   │   ├── middleware/
 │   │   │   └── index.js
 │   │   └── package.json
-│   ├── out-patients-card-and-out-patient-record-service/
-│   ├── adult-walk-in-clinical-performa-service/
-│   ├── out-patient-intake-record-service/
-│   └── prescription-service/
+│   ├── out-patients-card-and-out-patient-record/
+│   ├── adult-walk-in-clinical-performa/
+│   ├── out-patient-intake-record/
+│   └── prescription/
 ├── common/
 │   ├── database/
 │   │   └── pool.js
@@ -217,11 +217,11 @@ If you prefer to start services individually:
 
 1. **Install dependencies for each service**
    ```bash
-   cd services/user-service && npm install
-   cd ../out-patients-card-and-out-patient-record-service && npm install
-   cd ../adult-walk-in-clinical-performa-service && npm install
-   cd ../out-patient-intake-record-service && npm install
-   cd ../prescription-service && npm install
+   cd services/user && npm install
+   cd ../out-patients-card-and-out-patient-record && npm install
+   cd ../adult-walk-in-clinical-performa && npm install
+   cd ../out-patient-intake-record && npm install
+   cd ../prescription && npm install
    ```
 
 2. **Set up PostgreSQL database**
@@ -231,19 +231,19 @@ If you prefer to start services individually:
 3. **Start each service in separate terminals**
    ```bash
    # Terminal 1
-   cd services/user-service && npm run dev
+   cd services/user && npm run dev
 
    # Terminal 2
-   cd services/out-patients-card-and-out-patient-record-service && npm run dev
+   cd services/out-patients-card-and-out-patient-record && npm run dev
 
    # Terminal 3
-   cd services/adult-walk-in-clinical-performa-service && npm run dev
+   cd services/adult-walk-in-clinical-performa && npm run dev
 
    # Terminal 4
-   cd services/out-patient-intake-record-service && npm run dev
+   cd services/out-patient-intake-record && npm run dev
 
    # Terminal 5
-   cd services/prescription-service && npm run dev
+   cd services/prescription && npm run dev
    ```
 
 ## Main Entry Point
@@ -304,17 +304,17 @@ docker-compose up -d
 
 Nginx acts as the API gateway (when using Docker), routing requests to appropriate services:
 
-- `http://localhost/api/users` → user-service
-- `http://localhost/api/sessions` → user-service (session management)
-- `http://localhost/api/patients` → out-patients-card-and-out-patient-record-service
-- `http://localhost/api/patient-cards` → out-patients-card-and-out-patient-record-service
-- `http://localhost/api/patient-files` → out-patients-card-and-out-patient-record-service
-- `http://localhost/api/out-patient-records` → out-patients-card-and-out-patient-record-service
-- `http://localhost/api/clinical-proformas` → adult-walk-in-clinical-performa-service
-- `http://localhost/api/clinical-options` → adult-walk-in-clinical-performa-service
-- `http://localhost/api/outpatient-intake-records` → out-patient-intake-record-service
-- `http://localhost/api/adl-files` → out-patient-intake-record-service (legacy route)
-- `http://localhost/api/prescriptions` → prescription-service
+- `http://localhost/api/users` → user
+- `http://localhost/api/sessions` → user (session management)
+- `http://localhost/api/patients` → out-patients-card-and-out-patient-record
+- `http://localhost/api/patient-cards` → out-patients-card-and-out-patient-record
+- `http://localhost/api/patient-files` → out-patients-card-and-out-patient-record
+- `http://localhost/api/out-patient-records` → out-patients-card-and-out-patient-record
+- `http://localhost/api/clinical-proformas` → adult-walk-in-clinical-performa
+- `http://localhost/api/clinical-options` → adult-walk-in-clinical-performa
+- `http://localhost/api/outpatient-intake-records` → out-patient-intake-record
+- `http://localhost/api/adl-files` → out-patient-intake-record (legacy route)
+- `http://localhost/api/prescriptions` → prescription
 
 **Note:** When running with `npm start` (Node.js), you can access services directly on their ports (3001-3005) or set up Nginx separately.
 
@@ -491,27 +491,27 @@ The database schema remains the same as the monolithic backend. All services sha
 2. **Start each service**
    ```bash
    # Service 1
-   cd services/user-service
+   cd services/user
    npm install
    npm run dev
 
    # Service 2 (new terminal)
-   cd services/out-patients-card-and-out-patient-record-service
+   cd services/out-patients-card-and-out-patient-record
    npm install
    npm run dev
 
    # Service 3 (new terminal)
-   cd services/adult-walk-in-clinical-performa-service
+   cd services/adult-walk-in-clinical-performa
    npm install
    npm run dev
 
    # Service 4 (new terminal)
-   cd services/out-patient-intake-record-service
+   cd services/out-patient-intake-record
    npm install
    npm run dev
 
    # Service 5 (new terminal)
-   cd services/prescription-service
+   cd services/prescription
    npm install
    npm run dev
    ```
@@ -521,7 +521,7 @@ The database schema remains the same as the monolithic backend. All services sha
 Each service can be tested independently:
 
 ```bash
-cd services/user-service
+cd services/user
 npm test
 ```
 
@@ -570,7 +570,7 @@ Response:
 ```json
 {
   "success": true,
-  "service": "user-service",
+  "service": "user",
   "status": "running",
   "database": "connected",
   "timestamp": "2024-01-01T00:00:00.000Z"

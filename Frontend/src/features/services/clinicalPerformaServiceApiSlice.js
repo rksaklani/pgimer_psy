@@ -1,6 +1,6 @@
 /**
- * adult-walk-in-clinical-performa-service API Slice
- * Matches: Backend-Microservices/services/adult-walk-in-clinical-performa-service
+ * adult-walk-in-clinical-performa API Slice
+ * Matches: Backend-Microservices/services/adult-walk-in-clinical-performa
  * Port: 3003
  * Handles: Clinical Proformas, Clinical Options
  */

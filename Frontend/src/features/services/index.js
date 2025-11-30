@@ -4,18 +4,18 @@
  * Matches the backend microservices architecture exactly
  */
 
-// user-service (Port 3001)
+// user (Port 3001)
 export * from './userServiceApiSlice';
 
-// out-patients-card-and-out-patient-record-service (Port 3002)
+// out-patients-card-and-out-patient-record (Port 3002)
 export * from './patientCardAndRecordServiceApiSlice';
 
-// adult-walk-in-clinical-performa-service (Port 3003)
+// adult-walk-in-clinical-performa (Port 3003)
 export * from './clinicalPerformaServiceApiSlice';
 
-// out-patient-intake-record-service (Port 3004)
+// out-patient-intake-record (Port 3004)
 export * from './intakeRecordServiceApiSlice';
 
-// prescription-service (Port 3005)
+// prescription (Port 3005)
 export * from './prescriptionServiceApiSlice';
 

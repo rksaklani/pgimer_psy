@@ -23,11 +23,11 @@ services:
       - emrs-network
 
   # User Service (includes session management)
-  user-service:
+  user:
     build:
       context: .
-      dockerfile: ./services/user-service/Dockerfile
-    container_name: user-service
+      dockerfile: ./services/user/Dockerfile
+    container_name: user
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3001
@@ -55,11 +55,11 @@ services:
     restart: unless-stopped
 
   # Out Patients Card and Out Patient Record Service
-  out-patients-card-and-out-patient-record-service:
+  out-patients-card-and-out-patient-record:
     build:
       context: .
-      dockerfile: ./services/out-patients-card-and-out-patient-record-service/Dockerfile
-    container_name: out-patients-card-and-out-patient-record-service
+      dockerfile: ./services/out-patients-card-and-out-patient-record/Dockerfile
+    container_name: out-patients-card-and-out-patient-record
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3002
@@ -69,9 +69,9 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      USER_SERVICE_URL: http://user-service:3001
-      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
-      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record-service:3004
+      USER_SERVICE_URL: http://user:3001
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa:3003
+      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record:3004
     ports:
       - "3002:3002"
     volumes:
@@ -79,18 +79,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      user-service:
+      user:
         condition: service_started
     networks:
       - emrs-network
     restart: unless-stopped
 
   # Adult Walk-in Clinical Proforma Service (includes clinical options)
-  adult-walk-in-clinical-performa-service:
+  adult-walk-in-clinical-performa:
     build:
       context: .
-      dockerfile: ./services/adult-walk-in-clinical-performa-service/Dockerfile
-    container_name: adult-walk-in-clinical-performa-service
+      dockerfile: ./services/adult-walk-in-clinical-performa/Dockerfile
+    container_name: adult-walk-in-clinical-performa
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3003
@@ -100,26 +100,26 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record-service:3004
-      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record-service:3002
-      PRESCRIPTION_SERVICE_URL: http://prescription-service:3005
+      OUT_PATIENT_INTAKE_RECORD_SERVICE_URL: http://out-patient-intake-record:3004
+      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record:3002
+      PRESCRIPTION_SERVICE_URL: http://prescription:3005
     ports:
       - "3003:3003"
     depends_on:
       postgres:
         condition: service_healthy
-      out-patients-card-and-out-patient-record-service:
+      out-patients-card-and-out-patient-record:
         condition: service_started
     networks:
       - emrs-network
     restart: unless-stopped
 
   # Out Patient Intake Record Service
-  out-patient-intake-record-service:
+  out-patient-intake-record:
     build:
       context: .
-      dockerfile: ./services/out-patient-intake-record-service/Dockerfile
-    container_name: out-patient-intake-record-service
+      dockerfile: ./services/out-patient-intake-record/Dockerfile
+    container_name: out-patient-intake-record
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3004
@@ -129,8 +129,8 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record-service:3002
-      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
+      OUT_PATIENTS_CARD_AND_RECORD_SERVICE_URL: http://out-patients-card-and-out-patient-record:3002
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa:3003
     ports:
       - "3004:3004"
     volumes:
@@ -138,18 +138,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      out-patients-card-and-out-patient-record-service:
+      out-patients-card-and-out-patient-record:
         condition: service_started
     networks:
       - emrs-network
     restart: unless-stopped
 
   # Prescription Service
-  prescription-service:
+  prescription:
     build:
       context: .
-      dockerfile: ./services/prescription-service/Dockerfile
-    container_name: prescription-service
+      dockerfile: ./services/prescription/Dockerfile
+    container_name: prescription
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3005
@@ -159,13 +159,13 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa-service:3003
+      ADULT_WALK_IN_CLINICAL_PERFORMA_SERVICE_URL: http://adult-walk-in-clinical-performa:3003
     ports:
       - "3005:3005"
     depends_on:
       postgres:
         condition: service_healthy
-      adult-walk-in-clinical-performa-service:
+      adult-walk-in-clinical-performa:
         condition: service_started
     networks:
       - emrs-network
@@ -182,11 +182,11 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - user-service
-      - out-patients-card-and-out-patient-record-service
-      - adult-walk-in-clinical-performa-service
-      - out-patient-intake-record-service
-      - prescription-service
+      - user
+      - out-patients-card-and-out-patient-record
+      - adult-walk-in-clinical-performa
+      - out-patient-intake-record
+      - prescription
     networks:
       - emrs-network
     restart: unless-stopped

@@ -21,11 +21,11 @@ const colors = {
 
 const servicesDir = path.join(__dirname, 'services');
 const services = [
-  'user-service',
-  'out-patients-card-and-out-patient-record-service',
-  'adult-walk-in-clinical-performa-service',
-  'out-patient-intake-record-service',
-  'prescription-service'
+  'user',
+  'out-patients-card-and-out-patient-record',
+  'adult-walk-in-clinical-performa',
+  'out-patient-intake-record',
+  'prescription'
 ];
 
 console.log(`${colors.blue}📦 Installing dependencies for all services...${colors.reset}\n`);

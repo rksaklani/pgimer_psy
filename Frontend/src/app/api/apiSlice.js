@@ -8,11 +8,11 @@
  * 
  * Backend Architecture:
  * - Gateway Server: Port 5000 (http://localhost:5000)
- * - user-service: Port 3001
- * - out-patients-card-and-out-patient-record-service: Port 3002
- * - adult-walk-in-clinical-performa-service: Port 3003
- * - out-patient-intake-record-service: Port 3004
- * - prescription-service: Port 3005
+ * - user: Port 3001
+ * - out-patients-card-and-out-patient-record: Port 3002
+ * - adult-walk-in-clinical-performa: Port 3003
+ * - out-patient-intake-record: Port 3004
+ * - prescription: Port 3005
  * 
  * All API calls go through the gateway which proxies to the appropriate service.
  */
@@ -83,7 +83,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     // The backend will check inactivity on token refresh and expire if user has been idle for 2+ minutes
 
     // Try to refresh the token
-    // Gateway Route: /api/session/refresh → user-service (Port 3001)
+    // Gateway Route: /api/session/refresh → user (Port 3001)
     // User-service endpoint: POST /api/session/refresh
     const refreshResult = await baseQuery(
       { url: '/session/refresh', method: 'POST' },
@@ -123,30 +123,30 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
  * Endpoints are injected by service slices in features/services/
  * 
  * Gateway Routes (matching Backend-Microservices/server.js):
- * - /api/users → user-service (Port 3001)
- * - /api/sessions → user-service (Port 3001) - Patient visit sessions
- * - /api/session → user-service (Port 3001) - Auth sessions (refresh, logout, activity, info)
- * - /api/patients → out-patients-card-and-out-patient-record-service (Port 3002)
- * - /api/patient-cards → out-patients-card-and-out-patient-record-service (Port 3002)
- * - /api/patient-files → out-patients-card-and-out-patient-record-service (Port 3002)
- * - /api/out-patient-records → out-patients-card-and-out-patient-record-service (Port 3002)
- * - /api/clinical-proformas → adult-walk-in-clinical-performa-service (Port 3003)
- * - /api/clinical-options → adult-walk-in-clinical-performa-service (Port 3003)
- * - /api/outpatient-intake-records → out-patient-intake-record-service (Port 3004)
- * - /api/prescriptions → prescription-service (Port 3005)
+ * - /api/users → user (Port 3001)
+ * - /api/sessions → user (Port 3001) - Patient visit sessions
+ * - /api/session → user (Port 3001) - Auth sessions (refresh, logout, activity, info)
+ * - /api/patients → out-patients-card-and-out-patient-record (Port 3002)
+ * - /api/patient-cards → out-patients-card-and-out-patient-record (Port 3002)
+ * - /api/patient-files → out-patients-card-and-out-patient-record (Port 3002)
+ * - /api/out-patient-records → out-patients-card-and-out-patient-record (Port 3002)
+ * - /api/clinical-proformas → adult-walk-in-clinical-performa (Port 3003)
+ * - /api/clinical-options → adult-walk-in-clinical-performa (Port 3003)
+ * - /api/outpatient-intake-records → out-patient-intake-record (Port 3004)
+ * - /api/prescriptions → prescription (Port 3005)
  */
 export const apiSlice = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: [
     // ============================================
-    // User Service (user-service - Port 3001)
+    // User Service (user - Port 3001)
     // Gateway Routes: /api/users, /api/sessions, /api/session
     // ============================================
     'User',              // User management (CRUD operations) - user table
     'PatientVisit',      // Patient visit sessions - session management
     
     // ============================================
-    // Patient Card and Record Service (out-patients-card-and-out-patient-record-service - Port 3002)
+    // Patient Card and Record Service (out-patients-card-and-out-patient-record - Port 3002)
     // Gateway Routes: /api/patients, /api/patient-cards, /api/patient-files, /api/out-patient-records
     // ============================================
     'PatientCard',       // Patient cards - out_patients_card table
@@ -154,20 +154,20 @@ export const apiSlice = createApi({
     'PatientFile',       // Patient file uploads - file_uploads table
     
     // ============================================
-    // Clinical Performa Service (adult-walk-in-clinical-performa-service - Port 3003)
+    // Clinical Performa Service (adult-walk-in-clinical-performa - Port 3003)
     // Gateway Routes: /api/clinical-proformas, /api/clinical-options
     // ============================================
     'Clinical',          // Clinical proformas - adult_walk_in_clinical_performa table
     'ClinicalOptions',   // Clinical options/dropdowns - dynamic options for forms
     
     // ============================================
-    // Intake Record Service (out-patient-intake-record-service - Port 3004)
+    // Intake Record Service (out-patient-intake-record - Port 3004)
     // Gateway Routes: /api/outpatient-intake-records
     // ============================================
     'IntakeRecord',     // Intake records - out_patient_intake_record table
     
     // ============================================
-    // Prescription Service (prescription-service - Port 3005)
+    // Prescription Service (prescription - Port 3005)
     // Gateway Routes: /api/prescriptions
     // ============================================
     'Prescription',      // Prescriptions - prescription table
