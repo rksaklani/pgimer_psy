@@ -12,7 +12,13 @@
     "stop:docker": "docker-compose down",
     "restart:docker": "docker-compose restart",
     "logs": "docker-compose logs -f",
-    "install:all": "node install-all.js"
+    "install:all": "node install-all.js",
+    "test:db": "node test-db-connection.js",
+    "setup:db": "node setup-database.js",
+    "seed:users": "node seed-users.js",
+    "db:start": "docker start pgi-emrs-postgres || docker run -d --name pgi-emrs-postgres -e POSTGRES_DB=pgi_emrs -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=root -p 5432:5432 -v pgi_emrs_data:/var/lib/postgresql/data postgres:15-alpine",
+    "db:stop": "docker stop pgi-emrs-postgres",
+    "db:status": "docker ps --filter name=pgi-emrs-postgres"
   },
   "keywords": [
     "microservices",

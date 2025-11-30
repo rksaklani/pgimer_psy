@@ -1,7 +1,7 @@
 -- ============================================================================
 -- PGIMER EMRS Database Schema
 -- ============================================================================
--- This file contains the complete database schema for all 8 core tables
+-- This file contains the complete database schema for all 9 core tables
 -- Run this script to create a fresh database
 --
 -- Usage:
@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS prescription CASCADE;
 DROP TABLE IF EXISTS out_patient_intake_record CASCADE;
 DROP TABLE IF EXISTS adult_walk_in_clinical_performa CASCADE;
+DROP TABLE IF EXISTS patient_visits CASCADE;
 DROP TABLE IF EXISTS out_patient_record CASCADE;
 DROP TABLE IF EXISTS out_patients_card CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -130,7 +131,7 @@ CREATE TABLE out_patient_record (
     assigned_room TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cr_no) REFERENCES out_patients_card(cr_no),
+    FOREIGN KEY (cr_no) REFERENCES out_patients_card(cr_no) ON DELETE CASCADE,
     FOREIGN KEY (assigned_doctor_id) REFERENCES users(id)
 );
 
@@ -202,7 +203,7 @@ CREATE TABLE adult_walk_in_clinical_performa (
     doctor_role VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id),
+    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_doctor) REFERENCES users(id)
 );
 
@@ -491,9 +492,9 @@ CREATE TABLE out_patient_intake_record (
     prognosis TEXT,
     consultant_comments TEXT,
     
-    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id),
+    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (clinical_proforma_id) REFERENCES adult_walk_in_clinical_performa(id),
+    FOREIGN KEY (clinical_proforma_id) REFERENCES adult_walk_in_clinical_performa(id) ON DELETE SET NULL,
     FOREIGN KEY (last_accessed_by) REFERENCES users(id),
     FOREIGN KEY (assigned_doctor) REFERENCES users(id)
 );
@@ -501,7 +502,7 @@ CREATE TABLE out_patient_intake_record (
 -- Add foreign key constraint for adl_file_id in adult_walk_in_clinical_performa
 ALTER TABLE adult_walk_in_clinical_performa 
 ADD CONSTRAINT fk_adult_walk_in_clinical_performa_adl_file_id 
-FOREIGN KEY (adl_file_id) REFERENCES out_patient_intake_record(id);
+FOREIGN KEY (adl_file_id) REFERENCES out_patient_intake_record(id) ON DELETE SET NULL;
 
 -- Indexes for out_patient_intake_record table
 CREATE INDEX idx_out_patient_intake_record_patient_id ON out_patient_intake_record(patient_id);
@@ -522,8 +523,8 @@ CREATE TABLE prescription (
     prescriptions JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id),
-    FOREIGN KEY (clinical_proforma_id) REFERENCES adult_walk_in_clinical_performa(id)
+    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id) ON DELETE CASCADE,
+    FOREIGN KEY (clinical_proforma_id) REFERENCES adult_walk_in_clinical_performa(id) ON DELETE CASCADE
 );
 
 -- Indexes for prescription table
@@ -531,7 +532,33 @@ CREATE INDEX idx_prescription_patient_id ON prescription(patient_id);
 CREATE INDEX idx_prescription_clinical_proforma_id ON prescription(clinical_proforma_id);
 
 -- ============================================================================
--- 7. AUDIT_LOGS TABLE
+-- 7. PATIENT_VISITS TABLE
+-- ============================================================================
+-- Tracks patient visits and doctor assignments
+CREATE TABLE patient_visits (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL,
+    visit_date DATE NOT NULL,
+    visit_type VARCHAR(50),
+    has_file BOOLEAN DEFAULT false,
+    assigned_doctor_id INTEGER,
+    room_no VARCHAR(50),
+    visit_status VARCHAR(50) DEFAULT 'pending',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES out_patient_record(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_doctor_id) REFERENCES users(id)
+);
+
+-- Indexes for patient_visits table
+CREATE INDEX idx_patient_visits_patient_id ON patient_visits(patient_id);
+CREATE INDEX idx_patient_visits_visit_date ON patient_visits(visit_date);
+CREATE INDEX idx_patient_visits_assigned_doctor_id ON patient_visits(assigned_doctor_id);
+CREATE INDEX idx_patient_visits_visit_type ON patient_visits(visit_type);
+
+-- ============================================================================
+-- 8. AUDIT_LOGS TABLE
 -- ============================================================================
 -- Tracks CRUD events for all tables
 CREATE TABLE audit_logs (
@@ -554,7 +581,7 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 
 -- ============================================================================
--- 8. FILE_UPLOADS TABLE
+-- 9. FILE_UPLOADS TABLE
 -- ============================================================================
 -- Universal file storage table (no duplication)
 CREATE TABLE file_uploads (
@@ -608,6 +635,9 @@ CREATE TRIGGER update_out_patient_intake_record_updated_at BEFORE UPDATE ON out_
 CREATE TRIGGER update_prescription_updated_at BEFORE UPDATE ON prescription
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_patient_visits_updated_at BEFORE UPDATE ON patient_visits
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_file_uploads_updated_at BEFORE UPDATE ON file_uploads
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -620,17 +650,26 @@ COMMENT ON TABLE out_patient_record IS 'Extends out_patients_card with additiona
 COMMENT ON TABLE adult_walk_in_clinical_performa IS 'Walk-in clinical form + doctor decision';
 COMMENT ON TABLE out_patient_intake_record IS 'Intake assessment, linked to walk-in clinical performa';
 COMMENT ON TABLE prescription IS 'Linked to intake or clinical performa (visit-level)';
+COMMENT ON TABLE patient_visits IS 'Tracks patient visits and doctor assignments';
 COMMENT ON TABLE audit_logs IS 'Tracks CRUD events for all tables';
 COMMENT ON TABLE file_uploads IS 'Universal file storage table (no duplication)';
 
 -- ============================================================================
 -- SCHEMA CREATION COMPLETE
 -- ============================================================================
--- All 8 core tables have been created with:
+-- All 9 core tables have been created with:
 --   - Primary keys
---   - Foreign key relationships
+--   - Foreign key relationships with CASCADE DELETE where appropriate
 --   - Indexes for performance
 --   - Triggers for updated_at timestamps
 --   - Constraints and defaults
+--
+-- Cascade Delete Behavior:
+--   - Deleting out_patients_card → automatically deletes out_patient_record
+--   - Deleting out_patient_record → automatically deletes:
+--     * patient_visits
+--     * adult_walk_in_clinical_performa
+--     * out_patient_intake_record
+--     * prescription
 -- ============================================================================
 
